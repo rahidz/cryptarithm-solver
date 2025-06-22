@@ -1,5 +1,6 @@
 import ast
 import operator as op
+from typing import Any
 
 # Supported operators
 _operators = {
@@ -9,6 +10,8 @@ _operators = {
     ast.Div: op.truediv,
     ast.Pow: op.pow,
     ast.Mod: op.mod,
+    ast.UAdd: op.pos,
+    ast.USub: op.neg,
 }
 
 # Supported comparators
@@ -37,7 +40,11 @@ def safe_eval(expr: str) -> bool:
     """
     try:
         tree = ast.parse(expr, mode="eval")
-        return _eval_node(tree.body)
+        result = _eval_node(tree.body)
+        # The expression must evaluate to a boolean. Non-boolean results are invalid.
+        if isinstance(result, bool):
+            return result
+        return False
     except (
         ValueError,
         SyntaxError,
@@ -51,12 +58,19 @@ def safe_eval(expr: str) -> bool:
         return False
 
 
-def _eval_node(node):
+def _eval_node(node: ast.AST) -> Any:
     """
     Recursively evaluates an AST node.
     """
     if isinstance(node, ast.Constant):
         return node.value
+
+    if isinstance(node, ast.UnaryOp):
+        operand = _eval_node(node.operand)
+        operator = _operators.get(type(node.op))
+        if operator is None:
+            raise ValueError(f"Unsupported unary operator: {type(node.op).__name__}")
+        return operator(operand)
 
     if isinstance(node, ast.BinOp):
         left = _eval_node(node.left)
