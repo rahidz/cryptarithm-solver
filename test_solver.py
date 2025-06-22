@@ -66,6 +66,5 @@ class TestCryptarithmSolver(unittest.TestCase):
     def test_multiple_addends(self):
         solutions = solve_cryptarithm("THIS + ISA + GREAT + TIME = WASTER")
         self.assertIn("5628 + 280 + 97405 + 5234 = 108547", solutions)
-
 if __name__ == '__main__':
     unittest.main()

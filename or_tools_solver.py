@@ -83,6 +83,21 @@ def _add_pow_constraint(model: cp_model.CpModel, result_var, base_var, exp_var, 
     
     model.AddAllowedAssignments([result_var, base_var, exp_var], possible_values)
 
+class CryptarithmSolutionCallback(cp_model.CpSolverSolutionCallback):
+    """Callback to store all solutions."""
+    def __init__(self, letter_vars, puzzle_string):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self._letter_vars = letter_vars
+        self._puzzle_string = puzzle_string
+        self.solutions = []
+
+    def on_solution_callback(self):
+        solution_map = {letter: self.Value(var) for letter, var in self._letter_vars.items()}
+        from_str = "".join(solution_map.keys())
+        to_str = "".join(map(str, solution_map.values()))
+        table = str.maketrans(from_str, to_str)
+        self.solutions.append(self._puzzle_string.upper().translate(table))
+
 def solve_with_cp_sat(puzzle_string: str, base=10, constraints=None):
     """
     Solves a cryptarithm puzzle using the CP-SAT solver.
@@ -101,8 +116,7 @@ def solve_with_cp_sat(puzzle_string: str, base=10, constraints=None):
     first_letters = set()
     words_in_puzzle = re.findall('[A-Z]+', puzzle_string.upper())
     for word in words_in_puzzle:
-        if len(word) > 1:
-            first_letters.add(word[0])
+        first_letters.add(word[0])
 
     # --- 2. Perform validations ---
     if any(l not in all_letters for l in constraints.keys()):
@@ -171,14 +185,20 @@ def solve_with_cp_sat(puzzle_string: str, base=10, constraints=None):
 
     # --- 6. Solve the model ---
     solver = cp_model.CpSolver()
-    status = solver.Solve(model)
+    solver.parameters.enumerate_all_solutions = True
+    solution_callback = CryptarithmSolutionCallback(letter_vars, puzzle_string)
+    status = solver.Solve(model, solution_callback)
 
     # --- 7. Process and return the solution ---
-    if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
-        solution_map = {letter: solver.Value(var) for letter, var in letter_vars.items()}
-        from_str = "".join(solution_map.keys())
-        to_str = "".join(map(str, solution_map.values()))
-        table = str.maketrans(from_str, to_str)
-        return [puzzle_string.upper().translate(table)]
+    if solution_callback.solutions:
+        return sorted(list(set(solution_callback.solutions)))
+
+    if status == cp_model.INFEASIBLE:
+         return ["No solution found"]
+    
+    # Check for validation errors that lead to no solution
+    for letter, digit in constraints.items():
+        if letter in first_letters and digit == 0:
+            return [f"Invalid constraint: Letter '{letter}' cannot be zero."]
 
     return ["No solution found"]
