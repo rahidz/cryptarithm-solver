@@ -82,5 +82,10 @@ class TestCryptarithmSolver(unittest.TestCase):
         solutions = solve_cryptarithm("SIN*SIN+COS*COS=UNITE")
         self.assertIn("235*235+142*142=75389", solutions)
 
+    def test_multiple_addends(self):
+        # This should use the fast addition solver with more than two addends.
+        solutions = solve_cryptarithm("THIS + ISA + GREAT + TIME = WASTER")
+        self.assertIn("5628 + 280 + 97405 + 5234 = 108547", solutions)
+
 if __name__ == '__main__':
     unittest.main()
