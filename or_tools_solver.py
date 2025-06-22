@@ -3,8 +3,8 @@ This module provides a cryptarithm solver using Google's OR-Tools CP-SAT solver.
 """
 import re
 from ortools.sat.python import cp_model
-from parser import parse_puzzle, Operation, Word, Number, _parse_expression
-from typing import Dict, Union, Set
+from parser import parse_multi_puzzle, Operation, Word, Number, _parse_expression
+from typing import Dict, Union, Set, List
 
 def _int_to_base_digit_char(digit: int) -> str:
     """Converts a digit to its character representation for bases > 10."""
@@ -15,7 +15,7 @@ def _int_to_base_digit_char(digit: int) -> str:
 def _get_all_letters(node: Union[Operation, Word, Number]) -> Set[str]:
     """Recursively traverses the AST to collect all unique letters."""
     if isinstance(node, Word):
-        return set(node.letters)
+        return set(l for l in node.letters if isinstance(l, str))
     if isinstance(node, Operation):
         return _get_all_letters(node.left) | _get_all_letters(node.right)
     return set()
@@ -27,11 +27,14 @@ def _build_expression(model: cp_model.CpModel, node: Union[Operation, Word, Numb
 
     if isinstance(node, Word):
         linear_expr = 0
-        for letter in node.letters:
-            linear_expr = linear_expr * base + letter_vars[letter]
+        for element in node.letters:
+            if isinstance(element, str):
+                linear_expr = linear_expr * base + letter_vars[element]
+            else: # is an int
+                linear_expr = linear_expr * base + element
         
         max_word_val = (base ** len(node.letters)) - 1
-        word_var = model.NewIntVar(0, max_word_val if max_word_val > 0 else 0, "".join(node.letters))
+        word_var = model.NewIntVar(0, max_word_val if max_word_val > 0 else 0, "".join(map(str, node.letters)))
         model.Add(word_var == linear_expr)
         return word_var
 
@@ -91,38 +94,56 @@ def _add_pow_constraint(model: cp_model.CpModel, result_var, base_var, exp_var, 
 
 class CryptarithmSolutionCallback(cp_model.CpSolverSolutionCallback):
     """Callback to store all solutions."""
-    def __init__(self, letter_vars, puzzle_string):
+    def __init__(self, letter_vars, puzzles):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self._letter_vars = letter_vars
-        self._puzzle_string = puzzle_string
+        self._puzzles = puzzles
         self.solutions = []
 
     def on_solution_callback(self):
         solution_map = {letter: self.Value(var) for letter, var in self._letter_vars.items()}
+        
+        # Create the solved puzzle string
         from_str = "".join(solution_map.keys())
         to_str = "".join(map(_int_to_base_digit_char, solution_map.values()))
         table = str.maketrans(from_str, to_str)
-        self.solutions.append(self._puzzle_string.upper().translate(table))
+        solved_puzzle = "\n".join([p.upper().translate(table) for p in self._puzzles])
+        
+        # Create the letter-to-digit mapping string
+        letter_mapping_str = " ".join(sorted([f"{l}={v}" for l, v in solution_map.items()]))
+        
+        # Combine and store the solution
+        self.solutions.append(f"{solved_puzzle}\n{letter_mapping_str}")
 
-def solve_with_cp_sat(puzzle_string: str, base=10, constraints=None):
+def solve_with_cp_sat(puzzles: Union[str, List[str]], base=10, constraints=None):
     """
     Solves a cryptarithm puzzle using the CP-SAT solver.
+    Can handle a single puzzle string or a list of puzzle strings for simultaneous equations.
     """
     if constraints is None:
         constraints = {}
 
+    if isinstance(puzzles, str):
+        puzzles = [puzzles]
+
     try:
-        ast = parse_puzzle(puzzle_string)
+        asts = parse_multi_puzzle(puzzles)
     except ValueError as e:
         return [str(e)]
 
-    # --- 1. Collect letters and identify leading letters ---
-    all_letters = sorted(list(_get_all_letters(ast)))
-    
+    # --- 1. Collect letters and identify leading letters from all puzzles ---
+    all_letters = set()
+    for ast in asts:
+        all_letters.update(_get_all_letters(ast))
+    all_letters = sorted(list(all_letters))
+
     first_letters = set()
-    words_in_puzzle = re.findall('[A-Z]+', puzzle_string.upper())
-    for word in words_in_puzzle:
-        first_letters.add(word[0])
+    for puzzle_string in puzzles:
+        words_in_puzzle = re.findall('[A-Z0-9]+', puzzle_string.upper())
+        for word in words_in_puzzle:
+            if word:
+                if word and word[0].isalpha():
+                    first_letters.add(word[0])
 
     # --- 2. Perform validations ---
     if any(l not in all_letters for l in constraints.keys()):
@@ -152,9 +173,13 @@ def solve_with_cp_sat(puzzle_string: str, base=10, constraints=None):
         model.Add(letter_vars[letter] == digit)
 
     # --- 5. Build and add the main arithmetic constraint from the AST ---
-    all_words = re.findall('[A-Z]+', puzzle_string.upper())
+    all_words = []
+    all_numbers = []
+    for puzzle_string in puzzles:
+        all_words.extend(re.findall('[A-Z0-9]+', puzzle_string.upper()))
+        all_numbers.extend(re.findall(r'\d+', puzzle_string))
+    
     max_word_len = max(len(w) for w in all_words) if all_words else 0
-    all_numbers = re.findall('[0-9]+', puzzle_string)
     max_num_len = max(len(n) for n in all_numbers) if all_numbers else 0
     max_len = max(max_word_len, max_num_len)
     bound = base ** (max_len if max_len > 0 else 10)
@@ -170,51 +195,52 @@ def solve_with_cp_sat(puzzle_string: str, base=10, constraints=None):
         model.Add(helper_var == expr)
         return helper_var
 
-    if isinstance(ast.left, Operation) and ast.left.op == '/':
-        # Case: A/B = C or A/B = C/D
-        if isinstance(ast.right, Operation) and ast.right.op == '/':
-            # Equation is of the form A/B = C/D, so we solve A*D = B*C
-            a_expr = _build_expression(model, ast.left.left, letter_vars, base, bound, to_var)
-            b_expr = _build_expression(model, ast.left.right, letter_vars, base, bound, to_var)
-            c_expr = _build_expression(model, ast.right.left, letter_vars, base, bound, to_var)
-            d_expr = _build_expression(model, ast.right.right, letter_vars, base, bound, to_var)
+    for i, ast in enumerate(asts):
+        if isinstance(ast.left, Operation) and ast.left.op == '/':
+            # Case: A/B = C or A/B = C/D
+            if isinstance(ast.right, Operation) and ast.right.op == '/':
+                # Equation is of the form A/B = C/D, so we solve A*D = B*C
+                a_expr = _build_expression(model, ast.left.left, letter_vars, base, bound, to_var)
+                b_expr = _build_expression(model, ast.left.right, letter_vars, base, bound, to_var)
+                c_expr = _build_expression(model, ast.right.left, letter_vars, base, bound, to_var)
+                d_expr = _build_expression(model, ast.right.right, letter_vars, base, bound, to_var)
 
-            a_var = to_var(a_expr, 'a')
-            b_var = to_var(b_expr, 'b')
-            c_var = to_var(c_expr, 'c')
-            d_var = to_var(d_expr, 'd')
+                a_var = to_var(a_expr, f'a_{i}')
+                b_var = to_var(b_expr, f'b_{i}')
+                c_var = to_var(c_expr, f'c_{i}')
+                d_var = to_var(d_expr, f'd_{i}')
 
-            prod_bound = bound * bound
-            prod1_var = model.NewIntVar(-prod_bound, prod_bound, 'prod1')
-            prod2_var = model.NewIntVar(-prod_bound, prod_bound, 'prod2')
-            
-            model.AddMultiplicationEquality(prod1_var, [a_var, d_var])
-            model.AddMultiplicationEquality(prod2_var, [b_var, c_var])
-            model.Add(prod1_var == prod2_var)
+                prod_bound = bound * bound
+                prod1_var = model.NewIntVar(-prod_bound, prod_bound, f'prod1_{i}')
+                prod2_var = model.NewIntVar(-prod_bound, prod_bound, f'prod2_{i}')
+                
+                model.AddMultiplicationEquality(prod1_var, [a_var, d_var])
+                model.AddMultiplicationEquality(prod2_var, [b_var, c_var])
+                model.Add(prod1_var == prod2_var)
+            else:
+                # Equation is of the form A/B = C, so we solve A = B*C
+                dividend_node = ast.left.left
+                divisor_node = ast.left.right
+                quotient_node = ast.right
+                
+                dividend_expr = _build_expression(model, dividend_node, letter_vars, base, bound, to_var)
+                divisor_expr = _build_expression(model, divisor_node, letter_vars, base, bound, to_var)
+                quotient_expr = _build_expression(model, quotient_node, letter_vars, base, bound, to_var)
+
+                dividend_var = to_var(dividend_expr, f'dividend_{i}')
+                divisor_var = to_var(divisor_expr, f'divisor_{i}')
+                quotient_var = to_var(quotient_expr, f'quotient_{i}')
+
+                model.AddMultiplicationEquality(dividend_var, [divisor_var, quotient_var])
         else:
-            # Equation is of the form A/B = C, so we solve A = B*C
-            dividend_node = ast.left.left
-            divisor_node = ast.left.right
-            quotient_node = ast.right
-            
-            dividend_expr = _build_expression(model, dividend_node, letter_vars, base, bound, to_var)
-            divisor_expr = _build_expression(model, divisor_node, letter_vars, base, bound, to_var)
-            quotient_expr = _build_expression(model, quotient_node, letter_vars, base, bound, to_var)
-
-            dividend_var = to_var(dividend_expr, 'dividend')
-            divisor_var = to_var(divisor_expr, 'divisor')
-            quotient_var = to_var(quotient_expr, 'quotient')
-
-            model.AddMultiplicationEquality(dividend_var, [divisor_var, quotient_var])
-    else:
-        left_side_expr = _build_expression(model, ast.left, letter_vars, base, bound, to_var)
-        right_side_expr = _build_expression(model, ast.right, letter_vars, base, bound, to_var)
-        model.Add(left_side_expr == right_side_expr)
+            left_side_expr = _build_expression(model, ast.left, letter_vars, base, bound, to_var)
+            right_side_expr = _build_expression(model, ast.right, letter_vars, base, bound, to_var)
+            model.Add(left_side_expr == right_side_expr)
 
     # --- 6. Solve the model ---
     solver = cp_model.CpSolver()
     solver.parameters.enumerate_all_solutions = True
-    solution_callback = CryptarithmSolutionCallback(letter_vars, puzzle_string)
+    solution_callback = CryptarithmSolutionCallback(letter_vars, puzzles)
     status = solver.Solve(model, solution_callback)
 
     # --- 7. Process and return the solution ---

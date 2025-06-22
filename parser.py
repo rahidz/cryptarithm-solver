@@ -8,7 +8,7 @@ class Number:
 
 @dataclass
 class Word:
-    letters: List[str]
+    letters: List[Union[str, int]]
 
 @dataclass
 class Operation:
@@ -20,8 +20,9 @@ def _parse_operand(s: str) -> Union[Word, Number, Operation]:
     s = s.strip()
     if s.isdigit():
         return Number(digits=[int(d) for d in s])
-    elif s.isalpha():
-        return Word(letters=list(s))
+    elif s.isalnum():
+        elements = [int(c) if c.isdigit() else c for c in s]
+        return Word(letters=elements)
     # This is where we handle nested expressions by recursively calling the expression parser.
     elif s.startswith('(') and s.endswith(')'):
         return _parse_expression(s[1:-1])
@@ -98,3 +99,9 @@ def parse_puzzle(puzzle_string: str) -> Operation:
     right_expr = _parse_expression(right_str)
 
     return Operation(op='=', left=left_expr, right=right_expr)
+
+def parse_multi_puzzle(puzzle_lines: List[str]) -> List[Operation]:
+    """
+    Parses multiple puzzle lines into a list of ASTs.
+    """
+    return [parse_puzzle(line) for line in puzzle_lines]

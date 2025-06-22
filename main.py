@@ -5,7 +5,21 @@ def main():
     """
     Main function to run the cryptarithm solver with a custom puzzle.
     """
-    puzzle = input("Enter a cryptarithm puzzle: ")
+    print("Enter the cryptarithm equations, one per line.")
+    print("The last line of the puzzle should be the final sum.")
+    print("Press Enter on an empty line when you are finished.")
+    
+    puzzles = []
+    while True:
+        line = input()
+        if not line:
+            break
+        puzzles.append(line)
+
+    if not puzzles:
+        print("No puzzle entered.")
+        return
+
     constraints_str = input("Enter constraints (e.g., O=3, R=4), or press Enter for none: ")
     base_str = input("Enter the base (default is 10): ")
 
@@ -27,13 +41,15 @@ def main():
         print("Invalid base. Please enter an integer between 2 and 36.")
         return
 
-    print(f"Solving: {puzzle} in base {base} with constraints {constraints}")
+    print(f"Solving: {puzzles} in base {base} with constraints {constraints}")
     start_time = time.time()
-    solutions = solve_cryptarithm(puzzle, base, constraints)
+    solutions = solve_cryptarithm(puzzles, base, constraints)
     end_time = time.time()
     if solutions:
-        for solution in solutions:
-            print(f"Solution: {solution}")
+        for i, solution in enumerate(solutions):
+            print(f"--- Solution {i+1} ---")
+            print(solution)
+            print("-" * (len(f"--- Solution {i+1} ---")))
     else:
         print("No solution found")
     
