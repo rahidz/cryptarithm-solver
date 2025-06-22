@@ -77,5 +77,10 @@ class TestCryptarithmSolver(unittest.TestCase):
         result = solve_cryptarithm("SEND + MORE = MONEY", constraints={'M': 0})
         self.assertEqual(result, ["Invalid constraint: Letter 'M' cannot be zero."])
 
+    def test_complex_expression(self):
+        # This tests the new recursive descent parser and the generic solver.
+        solutions = solve_cryptarithm("SIN*SIN+COS*COS=UNITE")
+        self.assertIn("235*235+142*142=75389", solutions)
+
 if __name__ == '__main__':
     unittest.main()
