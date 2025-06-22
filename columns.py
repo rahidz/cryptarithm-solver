@@ -15,6 +15,7 @@ class Column:
     addends: List[str]
     result: str
     carry_in: bool
+    is_carry_out: bool = False
 
 @dataclass
 class ColumnEngine:
@@ -80,14 +81,14 @@ class ColumnEngine:
                     col_addends.append(addend.letters[col_idx])
             
             res_idx = len(result_expr.letters) - 1 - i
-            result_char = result_expr.letters[res_idx] if res_idx >= 0 else None
-
-            if not result_char:
-                result_char = f"__carry_{i}"
-                self._all_letters.add(result_char)
+            is_carry_out_col = res_idx < 0
+            if is_carry_out_col:
+                result_char = ''
+            else:
+                result_char = result_expr.letters[res_idx]
 
             self._columns.append(
-                Column(addends=col_addends, result=result_char, carry_in=(i > 0))
+                Column(addends=col_addends, result=result_char, carry_in=(i > 0), is_carry_out=is_carry_out_col)
             )
 
     def solve(self, puzzle_string: str, base=10, constraints=None):
@@ -109,7 +110,7 @@ class ColumnEngine:
             column = self._columns[col_idx]
 
             current_col_letters = set(column.addends)
-            if column.result and not column.result.startswith("__"):
+            if not column.is_carry_out:
                 current_col_letters.add(column.result)
 
             unassigned_letters = sorted([l for l in current_col_letters if l not in mapping])
@@ -127,7 +128,7 @@ class ColumnEngine:
                 try:
                     col_sum = sum(full_col_mapping[l] for l in column.addends) + carry
                     
-                    if column.result.startswith("__"):
+                    if column.is_carry_out:
                         # This is a carry-out column. The result of this column must be 0.
                         if col_sum % base == 0:
                             new_carry = col_sum // base

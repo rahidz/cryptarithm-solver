@@ -1,6 +1,4 @@
 import re
-from itertools import permutations
-import re
 from evaluator import safe_eval
 from parser import parse_puzzle, Operation, Word, Number
 from columns import ColumnEngine
@@ -9,8 +7,6 @@ def _solve_generic_puzzle(ast: Operation, puzzle_string: str, base=10, constrain
     if constraints is None:
         constraints = {}
 
-    # This is a simplified letter collection, assuming the column engine handles the main logic.
-    # For generic puzzles, we still need to know all letters.
     letters = set()
     def collect_letters(node):
         if isinstance(node, Word):
@@ -20,8 +16,7 @@ def _solve_generic_puzzle(ast: Operation, puzzle_string: str, base=10, constrain
             collect_letters(node.right)
     collect_letters(ast)
     unique_letters = sorted(list(letters))
-    
-    # A simple way to get first letters for the generic solver.
+
     first_letters = set()
     words_in_puzzle = re.findall('[A-Z]+', puzzle_string.upper())
     for word in words_in_puzzle:
@@ -39,34 +34,47 @@ def _solve_generic_puzzle(ast: Operation, puzzle_string: str, base=10, constrain
         return [f"Too many unique letters for base {base}. The puzzle is unsolvable."]
 
     letters_to_solve = [l for l in unique_letters if l not in constraints]
-    used_digits = set(constraints.values())
-    available_digits = [d for d in range(base) if d not in used_digits]
-
-    if len(letters_to_solve) > len(available_digits):
-        return ["Not enough available digits for the remaining letters after applying constraints."]
-
+    
     solutions = []
-    for p in permutations(available_digits, len(letters_to_solve)):
-        mapping = constraints.copy()
-        mapping.update(dict(zip(letters_to_solve, p)))
+    
+    equation_template = puzzle_string.upper().replace("=", "==")
+    sorted_words = sorted(words_in_puzzle, key=len, reverse=True)
 
-        if any(mapping[letter] == 0 for letter in first_letters if letter in letters_to_solve):
-            continue
+    def backtrack(letters_idx, current_mapping, current_used_digits):
+        if letters_idx == len(letters_to_solve):
+            from_str = "".join(unique_letters)
+            to_str = "".join([str(current_mapping[l]) for l in unique_letters])
+            table = str.maketrans(from_str, to_str)
 
-        from_str = "".join(unique_letters)
-        to_str = "".join([str(mapping[l]) for l in unique_letters])
-        table = str.maketrans(from_str, to_str)
+            eval_equation = equation_template
+            for word in sorted_words:
+                digit_word = "".join([str(current_mapping[l]) for l in word])
+                eval_equation = re.sub(r'\b' + word + r'\b', f'int("{digit_word}", {base})', eval_equation)
+
+            if safe_eval(eval_equation):
+                solutions.append(puzzle_string.upper().translate(table))
+            return
+
+        letter_to_assign = letters_to_solve[letters_idx]
         
-        equation = puzzle_string.upper().replace("=", "==")
-        
-        # This part remains similar, as it handles generic expressions.
-        eval_equation = equation
-        for word in sorted(words_in_puzzle, key=len, reverse=True):
-            digit_word = "".join([str(mapping[l]) for l in word])
-            eval_equation = re.sub(r'\b' + word + r'\b', f'int("{digit_word}", {base})', eval_equation)
+        for digit in range(base):
+            if digit in current_used_digits:
+                continue
 
-        if safe_eval(eval_equation):
-            solutions.append(puzzle_string.upper().translate(table))
+            if digit == 0 and letter_to_assign in first_letters:
+                continue
+
+            current_mapping[letter_to_assign] = digit
+            current_used_digits.add(digit)
+
+            backtrack(letters_idx + 1, current_mapping, current_used_digits)
+
+            current_used_digits.remove(digit)
+            del current_mapping[letter_to_assign]
+
+    initial_mapping = constraints.copy()
+    initial_used_digits = set(constraints.values())
+    backtrack(0, initial_mapping, initial_used_digits)
 
     if not solutions:
         return ["No solution found"]
