@@ -10,16 +10,17 @@ def solve_cryptarithm(puzzle_string):
         puzzle_string (str): The puzzle to solve (e.g., "SEND + MORE = MONEY").
 
     Returns:
-        str: The solved puzzle as a string, or an error message.
+        list[str]: A list of solutions, or an error message inside a list.
     """
     words, unique_letters = parse_puzzle(puzzle_string)
 
     if unique_letters is None or words is None:
-        return "Invalid puzzle"
+        return ["Invalid puzzle"]
 
     first_letters = {word[0] for word in words}
     sorted_letters = sorted(list(unique_letters))
     
+    solutions = []
     digits = range(10)
     for p in permutations(digits, len(sorted_letters)):
         # Create the mapping from letters to digits
@@ -41,9 +42,11 @@ def solve_cryptarithm(puzzle_string):
         try:
             # Replace '=' with '==' for evaluation and check for validity
             if eval(re.sub(r'([A-Z0-9]+)', r'int(\1)', equation).replace('=', '==')):
-                return equation
+                solutions.append(equation)
         except (SyntaxError, TypeError):
             # If the translated equation is not valid Python, skip it
             continue
             
-    return "No solution found"
+    if not solutions:
+        return ["No solution found"]
+    return solutions
