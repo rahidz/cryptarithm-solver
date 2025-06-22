@@ -1,4 +1,5 @@
 # tests.py
+from evaluator import safe_eval
 from solver import solve_cryptarithm
 
 def test_send_more_money():
@@ -6,7 +7,7 @@ def test_send_more_money():
     # The solver may produce different but valid mappings.
     # We will check if the result is a valid equation that holds true.
     assert result is not None and len(result) > 0
-    assert eval(result[0].replace('=', '=='))
+    assert safe_eval(result[0].replace("=", "=="))
 
 def test_abcd_puzzle():
     result = solve_cryptarithm("ABCD * 9 = DCBA")

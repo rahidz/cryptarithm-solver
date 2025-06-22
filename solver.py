@@ -1,5 +1,5 @@
-import re
 from itertools import permutations
+from evaluator import safe_eval
 from parser import parse_puzzle
 
 def solve_cryptarithm(puzzle_string):
@@ -39,13 +39,9 @@ def solve_cryptarithm(puzzle_string):
         # Translate the original puzzle string into a numeric equation
         equation = puzzle_string.upper().translate(table)
         
-        try:
-            # Replace '=' with '==' for evaluation and check for validity
-            if eval(re.sub(r'([A-Z0-9]+)', r'int(\1)', equation).replace('=', '==')):
-                solutions.append(equation)
-        except (SyntaxError, TypeError):
-            # If the translated equation is not valid Python, skip it
-            continue
+        # Replace '=' with '==' for evaluation and check for validity
+        if safe_eval(equation.replace("=", "==")):
+            solutions.append(equation)
             
     if not solutions:
         return ["No solution found"]
