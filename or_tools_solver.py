@@ -6,6 +6,12 @@ from ortools.sat.python import cp_model
 from parser import parse_puzzle, Operation, Word, Number, _parse_expression
 from typing import Dict, Union, Set
 
+def _int_to_base_digit_char(digit: int) -> str:
+    """Converts a digit to its character representation for bases > 10."""
+    if digit < 10:
+        return str(digit)
+    return chr(ord('A') + digit - 10)
+
 def _get_all_letters(node: Union[Operation, Word, Number]) -> Set[str]:
     """Recursively traverses the AST to collect all unique letters."""
     if isinstance(node, Word):
@@ -44,7 +50,7 @@ def _build_expression(model: cp_model.CpModel, node: Union[Operation, Word, Numb
         if node.op == '*':
             l_var = to_var_func(left_expr, 'l_mul')
             r_var = to_var_func(right_expr, 'r_mul')
-            prod_var = model.NewIntVar(-bound, bound, 'prod')
+            prod_var = model.NewIntVar(-bound * bound, bound * bound, 'prod')
             model.AddMultiplicationEquality(prod_var, [l_var, r_var])
             return prod_var
         
@@ -94,7 +100,7 @@ class CryptarithmSolutionCallback(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self):
         solution_map = {letter: self.Value(var) for letter, var in self._letter_vars.items()}
         from_str = "".join(solution_map.keys())
-        to_str = "".join(map(str, solution_map.values()))
+        to_str = "".join(map(_int_to_base_digit_char, solution_map.values()))
         table = str.maketrans(from_str, to_str)
         self.solutions.append(self._puzzle_string.upper().translate(table))
 
@@ -165,19 +171,41 @@ def solve_with_cp_sat(puzzle_string: str, base=10, constraints=None):
         return helper_var
 
     if isinstance(ast.left, Operation) and ast.left.op == '/':
-        dividend_node = ast.left.left
-        divisor_node = ast.left.right
-        quotient_node = ast.right
-        
-        dividend_expr = _build_expression(model, dividend_node, letter_vars, base, bound, to_var)
-        divisor_expr = _build_expression(model, divisor_node, letter_vars, base, bound, to_var)
-        quotient_expr = _build_expression(model, quotient_node, letter_vars, base, bound, to_var)
+        # Case: A/B = C or A/B = C/D
+        if isinstance(ast.right, Operation) and ast.right.op == '/':
+            # Equation is of the form A/B = C/D, so we solve A*D = B*C
+            a_expr = _build_expression(model, ast.left.left, letter_vars, base, bound, to_var)
+            b_expr = _build_expression(model, ast.left.right, letter_vars, base, bound, to_var)
+            c_expr = _build_expression(model, ast.right.left, letter_vars, base, bound, to_var)
+            d_expr = _build_expression(model, ast.right.right, letter_vars, base, bound, to_var)
 
-        dividend_var = to_var(dividend_expr, 'dividend')
-        divisor_var = to_var(divisor_expr, 'divisor')
-        quotient_var = to_var(quotient_expr, 'quotient')
+            a_var = to_var(a_expr, 'a')
+            b_var = to_var(b_expr, 'b')
+            c_var = to_var(c_expr, 'c')
+            d_var = to_var(d_expr, 'd')
 
-        model.AddMultiplicationEquality(dividend_var, [divisor_var, quotient_var])
+            prod_bound = bound * bound
+            prod1_var = model.NewIntVar(-prod_bound, prod_bound, 'prod1')
+            prod2_var = model.NewIntVar(-prod_bound, prod_bound, 'prod2')
+            
+            model.AddMultiplicationEquality(prod1_var, [a_var, d_var])
+            model.AddMultiplicationEquality(prod2_var, [b_var, c_var])
+            model.Add(prod1_var == prod2_var)
+        else:
+            # Equation is of the form A/B = C, so we solve A = B*C
+            dividend_node = ast.left.left
+            divisor_node = ast.left.right
+            quotient_node = ast.right
+            
+            dividend_expr = _build_expression(model, dividend_node, letter_vars, base, bound, to_var)
+            divisor_expr = _build_expression(model, divisor_node, letter_vars, base, bound, to_var)
+            quotient_expr = _build_expression(model, quotient_node, letter_vars, base, bound, to_var)
+
+            dividend_var = to_var(dividend_expr, 'dividend')
+            divisor_var = to_var(divisor_expr, 'divisor')
+            quotient_var = to_var(quotient_expr, 'quotient')
+
+            model.AddMultiplicationEquality(dividend_var, [divisor_var, quotient_var])
     else:
         left_side_expr = _build_expression(model, ast.left, letter_vars, base, bound, to_var)
         right_side_expr = _build_expression(model, ast.right, letter_vars, base, bound, to_var)
