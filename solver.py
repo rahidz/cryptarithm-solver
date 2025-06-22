@@ -8,7 +8,9 @@ def _to_base_char(n):
         return str(n)
     return chr(ord('A') + n - 10)
 
-def _solve_addition_puzzle(puzzle_string, base=10):
+def _solve_addition_puzzle(puzzle_string, base=10, constraints=None):
+    if constraints is None:
+        constraints = {}
     """
     Solves addition-based cryptarithmetic puzzles using a column-wise backtracking algorithm.
     """
@@ -24,10 +26,21 @@ def _solve_addition_puzzle(puzzle_string, base=10):
         return ["Invalid characters in puzzle. Only letters are allowed."]
 
     all_letters = sorted(list(set("".join(words))))
+
+    if any(l not in all_letters for l in constraints.keys()):
+        return ["Invalid constraint: A letter in the constraint is not in the puzzle."]
+    if len(set(constraints.values())) != len(constraints.values()):
+        return ["Invalid constraint: Digits in constraints must be unique."]
+    if any(d >= base for d in constraints.values()):
+        return [f"Invalid constraint: A digit is greater than or equal to the base {base}."]
+
     if len(all_letters) > base:
         return [f"Too many unique letters for base {base}. The puzzle is unsolvable."]
 
     first_letters = {word[0] for word in words if word}
+    for letter, digit in constraints.items():
+        if letter in first_letters and digit == 0:
+            return [f"Invalid constraint: Letter '{letter}' cannot be zero."]
     
     max_len = max(len(w) for w in words)
     if len(result_word) > max_len:
@@ -74,34 +87,53 @@ def _solve_addition_puzzle(puzzle_string, base=10):
                 new_carry = col_sum // base
                 backtrack(col - 1, new_carry, full_col_mapping, all_letters)
 
-    backtrack(max_len - 1, 0, {}, all_letters)
+    backtrack(max_len - 1, 0, constraints.copy(), all_letters)
     
     if not solutions:
         return ["No solution found"]
     return sorted(list(set(solutions)))
 
-def _solve_generic_puzzle(puzzle_string, base=10):
+def _solve_generic_puzzle(puzzle_string, base=10, constraints=None):
+    if constraints is None:
+        constraints = {}
     """
     Solves a cryptarithmetic puzzle using a brute-force permutation approach.
     """
     words, unique_letters = parse_puzzle(puzzle_string)
 
+    if any(l not in unique_letters for l in constraints.keys()):
+        return ["Invalid constraint: A letter in the constraint is not in the puzzle."]
+    if len(set(constraints.values())) != len(constraints.values()):
+        return ["Invalid constraint: Digits in constraints must be unique."]
+    if any(d >= base for d in constraints.values()):
+        return [f"Invalid constraint: A digit is greater than or equal to the base {base}."]
+
+    first_letters = {word[0] for word in words}
+    for letter, digit in constraints.items():
+        if letter in first_letters and digit == 0:
+            return [f"Invalid constraint: Letter '{letter}' cannot be zero."]
+
     if len(unique_letters) > base:
         return [f"Too many unique letters for base {base}. The puzzle is unsolvable."]
 
-    first_letters = {word[0] for word in words}
-    sorted_letters = sorted(list(unique_letters))
+    letters_to_solve = sorted([l for l in unique_letters if l not in constraints])
+    used_digits = set(constraints.values())
+    available_digits = [d for d in range(base) if d not in used_digits]
+
+    if len(letters_to_solve) > len(available_digits):
+        return ["Not enough available digits for the remaining letters after applying constraints."]
 
     solutions = []
-    digits = range(base)
-    for p in permutations(digits, len(sorted_letters)):
-        mapping = dict(zip(sorted_letters, p))
+    for p in permutations(available_digits, len(letters_to_solve)):
+        mapping = constraints.copy()
+        mapping.update(dict(zip(letters_to_solve, p)))
 
-        if any(mapping[letter] == 0 for letter in first_letters):
+        if any(mapping[letter] == 0 for letter in first_letters if letter in letters_to_solve):
             continue
 
-        from_str = "".join(sorted_letters)
-        to_str = "".join(map(_to_base_char, p))
+        sorted_unique_letters = sorted(list(unique_letters))
+        from_str = "".join(sorted_unique_letters)
+        to_str = "".join([_to_base_char(mapping[l]) for l in sorted_unique_letters])
         table = str.maketrans(from_str, to_str)
 
         equation = puzzle_string.upper().replace("=", "==")
@@ -123,12 +155,14 @@ def _solve_generic_puzzle(puzzle_string, base=10):
         return ["No solution found"]
     return solutions
 
-def solve_cryptarithm(puzzle_string, base=10):
+def solve_cryptarithm(puzzle_string, base=10, constraints=None):
+    if constraints is None:
+        constraints = {}
     """
     Solves a cryptarithmetic puzzle.
     Delegates to the appropriate solver based on the operator.
     """
     if '+' in puzzle_string and all(op not in puzzle_string for op in '*/-'):
-        return _solve_addition_puzzle(puzzle_string, base=base)
+        return _solve_addition_puzzle(puzzle_string, base=base, constraints=constraints)
     else:
-        return _solve_generic_puzzle(puzzle_string, base=base)
+        return _solve_generic_puzzle(puzzle_string, base=base, constraints=constraints)

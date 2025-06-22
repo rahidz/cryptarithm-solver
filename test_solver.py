@@ -48,5 +48,34 @@ class TestCryptarithmSolver(unittest.TestCase):
         result = solve_cryptarithm("A * B = C")
         self.assertNotIn("1 * 0 = 0", result)
 
+    def test_constraint_addition_puzzle(self):
+        solutions = solve_cryptarithm("WRONG + WRONG = RIGHT", constraints={'O': 3})
+        self.assertIn("49306 + 49306 = 98612", solutions)
+        self.assertEqual(len(solutions), 1)
+
+    def test_constraint_generic_puzzle(self):
+        solutions = solve_cryptarithm("ABCD * 9 = DCBA", constraints={'A': 1})
+        self.assertIn("1089 * 9 = 9801", solutions)
+
+    def test_invalid_constraint_letter_not_in_puzzle(self):
+        result = solve_cryptarithm("SEND + MORE = MONEY", constraints={'Z': 1})
+        self.assertEqual(result, ["Invalid constraint: A letter in the constraint is not in the puzzle."])
+
+    def test_invalid_constraint_digits_not_unique(self):
+        result = solve_cryptarithm("A + B = C", constraints={'A': 1, 'B': 1})
+        self.assertEqual(result, ["Invalid constraint: Digits in constraints must be unique."])
+
+    def test_invalid_constraint_digit_ge_base(self):
+        result = solve_cryptarithm("A + B = C", base=2, constraints={'A': 2})
+        self.assertEqual(result, ["Invalid constraint: A digit is greater than or equal to the base 2."])
+
+    def test_invalid_constraint_leading_zero(self):
+        result = solve_cryptarithm("A + B = C", constraints={'A': 0})
+        self.assertEqual(result, ["Invalid constraint: Letter 'A' cannot be zero."])
+
+    def test_constraint_no_solution(self):
+        result = solve_cryptarithm("SEND + MORE = MONEY", constraints={'M': 0})
+        self.assertEqual(result, ["Invalid constraint: Letter 'M' cannot be zero."])
+
 if __name__ == '__main__':
     unittest.main()
