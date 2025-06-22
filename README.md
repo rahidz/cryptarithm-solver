@@ -6,20 +6,25 @@ For example, `SEND + MORE = MONEY` can be solved as `9567 + 1085 = 10652`.
 
 ## Features
 
-*   **Multiple Operations**: Solves puzzles involving addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), and exponentiation (`**`).
-*   **Optimized Addition Solver**: Utilizes a fast, column-wise backtracking algorithm for addition-only puzzles, significantly improving performance.
+*   **Complex Expression Support**: Solves puzzles with multiple operators, including addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), and exponentiation (`^`), respecting mathematical precedence.
+*   **Finds All Solutions**: Capable of finding and displaying all possible solutions to a puzzle.
 *   **Arbitrary Base Support**: Solves puzzles in different numerical bases, from base 2 to base 36.
 *   **Constraints**: Allows users to provide constraints by pre-assigning digits to specific letters (e.g., `M=1`).
-*   **Safe Evaluation**: Uses a secure, custom-built expression evaluator to prevent arbitrary code execution when solving generic puzzles.
+*   **Powerful Backend**: Utilizes Google's OR-Tools (CP-SAT solver) to efficiently model and solve complex puzzles as constraint satisfaction problems.
+*   **AST-Based Parsing**: Safely parses puzzle strings into an Abstract Syntax Tree (AST), allowing for the evaluation of nested expressions without using `eval()`.
 
 ## How to Run
 
 1.  Ensure you have Python 3 installed.
-2.  Run the main script from your terminal:
+2.  Install the required dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  Run the main script from your terminal:
     ```bash
     python main.py
     ```
-3.  Follow the interactive prompts to enter the puzzle, optional constraints, and the base.
+4.  Follow the interactive prompts to enter the puzzle, optional constraints, and the base.
 
 ### Example Session
 
@@ -30,48 +35,44 @@ Enter the base (default is 10):
 Solving: SEND + MORE = MONEY in base 10 with constraints {}
 Solution: 9567 + 1085 = 10652
 
-Solved in 0.0120 seconds.
+Solved in 0.0450 seconds.
 ```
 
 ## Examples
 
-This solver can handle a variety of puzzles:
+This solver can handle a wide variety of puzzles:
 
 *   **Classic Addition**: `SEND + MORE = MONEY` -> `9567 + 1085 = 10652`
 *   **Multiplication**: `ABCD * 9 = DCBA` -> `1089 * 9 = 9801`
-*   **Different Bases**: `ALFRED / E = NEUMAN` in base 9 -> `704836 / 3 = 231572`
+*   **Division**: `DONALD / GERALD = R` (approximated)
+*   **Exponentiation**: `A ** B = C`
+*   **Different Bases**: `GREEN - BLUE = ORANGE` in base 16
 *   **With Constraints**: `WRONG + WRONG = RIGHT` with `O=3` -> `49306 + 49306 = 98612`
 
 ## Project Structure
 
 *   `main.py`: The main entry point for the application. It handles user input and orchestrates the solving process.
-*   `parser.py`: Contains the logic for parsing the puzzle string into a structured format (words and unique letters) that the solver can process.
-*   `solver.py`: Houses the core puzzle-solving logic. It intelligently delegates tasks to the appropriate solver based on the puzzle's operators.
-*   `evaluator.py`: Implements a safe `eval()` alternative to securely evaluate mathematical expressions by parsing them into an Abstract Syntax Tree (AST) and only allowing a whitelist of simple arithmetic operations.
-*   `test_solver.py`: Contains a comprehensive suite of unit tests to ensure the correctness of all modules and functionalities.
+*   `parser.py`: Implements a robust parser that converts the puzzle string into an Abstract Syntax Tree (AST), respecting operator precedence.
+*   `solver.py`: A simple wrapper that directs the puzzle to the OR-Tools solver.
+*   `or_tools_solver.py`: The core of the solver. It uses the Google OR-Tools CP-SAT solver to model the puzzle as a constraint satisfaction problem and find all valid solutions.
+*   `test_solver.py`: Contains a suite of unit tests to ensure the correctness of all modules.
 
 ## How It Works
 
-The application employs a two-pronged approach to solving puzzles, chosen based on the operators present in the input string.
+The application leverages **Google's OR-Tools**, a powerful suite for solving combinatorial optimization problems. The old approach of brute-force permutation has been replaced with a more intelligent **constraint programming** model.
 
-### 1. Optimized Addition Solver (`_solve_addition_puzzle`)
+1.  **Parse to AST**: The puzzle string (e.g., `SEND + MORE = MONEY`) is first parsed by `parser.py` into an Abstract Syntax Tree (AST). This tree structure accurately represents the mathematical operations and their hierarchy, easily handling complex and nested expressions.
 
-If the puzzle only contains the `+` operator, a highly efficient, column-wise backtracking algorithm is used.
+2.  **Create a CP-SAT Model**: In `or_tools_solver.py`, a `CpModel` is instantiated. This model will contain all the variables and constraints of our puzzle.
 
-1.  The puzzle is parsed into addends and a result, which are then padded and aligned by columns.
-2.  The solver works from the rightmost column to the left, assigning digits to letters.
-3.  It uses backtracking to explore valid digit assignments for each column, carrying over values to the next column as needed.
-4.  This avoids generating unnecessary permutations for the entire set of letters, making it much faster for addition problems.
+3.  **Define Variables**: Each unique letter in the puzzle is defined as an integer variable, with a domain (possible values) from `0` to `base - 1`.
 
-### 2. Generic Solver (`_solve_generic_puzzle`)
+4.  **Apply Constraints**: The logic of the puzzle is translated into a set of constraints that the solver must satisfy:
+    *   **All Different**: All letter variables must be assigned a unique digit.
+    *   **No Leading Zeros**: The first letter of any word (e.g., 'S' in `SEND`) cannot be assigned the digit 0.
+    *   **User Constraints**: Any constraints provided by the user (e.g., `M=1`) are added to the model.
+    *   **The Main Equation**: The AST is traversed to build a single, large mathematical constraint representing the core puzzle equation. The solver handles `+`, `-`, `*`, `/`, and `^` operations by converting them into equivalent forms within the model.
 
-For puzzles involving other operators (`*`, `/`, `-`, etc.), a more general brute-force approach is used.
+5.  **Solve**: The CP-SAT solver is invoked. It uses sophisticated search algorithms to find all possible assignments for the letter variables that satisfy every single constraint.
 
-1.  **Parse**: The `parser.py` module extracts all unique letters from the puzzle.
-2.  **Permute**: It generates all possible permutations of available digits for the set of unique letters, while respecting any user-defined constraints.
-3.  **Evaluate**: For each permutation:
-    *   A mapping from letters to digits is created.
-    *   Leading zero assignments are discarded (e.g., the first letter of a multi-digit number cannot be '0').
-    *   The letters in the puzzle are substituted with their assigned digits to form a numerical equation.
-    *   The `safe_eval()` function in `evaluator.py` evaluates the equation. The `int()` function is explicitly used on each number in the equation string to handle different bases correctly.
-4.  **Return**: If an evaluated equation is true, the solution is returned. If all permutations are tested without a match, it reports that no solution was found.
+6.  **Return Solutions**: A callback function collects all valid solutions found by the solver. These are then formatted into readable strings and presented to the user.
