@@ -41,6 +41,18 @@ def _find_rightmost_operator(s: str, operators: List[str]) -> int:
             return i
     return -1
 
+def _find_leftmost_operator(s: str, operators: List[str]) -> int:
+    """Find the leftmost operator at the top level of an expression."""
+    level = 0
+    for i in range(len(s)):
+        if s[i] == '(':
+            level += 1
+        elif s[i] == ')':
+            level -= 1
+        elif level == 0 and s[i] in operators:
+            return i
+    return -1
+
 def _parse_expression(s: str) -> Union[Operation, Word, Number]:
     """Recursively parse an expression respecting operator precedence."""
     # Addition and Subtraction (lowest precedence)
@@ -53,6 +65,14 @@ def _parse_expression(s: str) -> Union[Operation, Word, Number]:
 
     # Multiplication and Division (higher precedence)
     pos = _find_rightmost_operator(s, ['*', '/'])
+    if pos != -1:
+        op = s[pos]
+        left = _parse_expression(s[:pos])
+        right = _parse_expression(s[pos+1:])
+        return Operation(op=op, left=left, right=right)
+
+    # Exponentiation (highest precedence, right-associative)
+    pos = _find_leftmost_operator(s, ['^'])
     if pos != -1:
         op = s[pos]
         left = _parse_expression(s[:pos])
@@ -75,6 +95,6 @@ def parse_puzzle(puzzle_string: str) -> Operation:
     left_str, right_str = parts
     
     left_expr = _parse_expression(left_str)
-    right_expr = _parse_operand(right_str) # The result is always a single word/number.
+    right_expr = _parse_expression(right_str)
 
     return Operation(op='=', left=left_expr, right=right_expr)

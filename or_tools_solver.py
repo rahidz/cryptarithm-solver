@@ -48,10 +48,40 @@ def _build_expression(model: cp_model.CpModel, node: Union[Operation, Word, Numb
             model.AddMultiplicationEquality(prod_var, [l_var, r_var])
             return prod_var
         
+        if node.op == '^':
+            base_var = to_var_func(left_expr, 'base_pow')
+            exponent_var = to_var_func(right_expr, 'exponent')
+            pow_var = model.NewIntVar(-bound, bound, 'pow')
+            # CP-SAT does not have a direct power function, so we use a workaround.
+            # This can be slow if the domain of variables is large.
+            _add_pow_constraint(model, pow_var, base_var, exponent_var, bound)
+            return pow_var
+
         raise ValueError(f"Unsupported operator: {node.op}")
 
     raise TypeError(f"Unsupported node type: {type(node).__name__}")
 
+def _add_pow_constraint(model: cp_model.CpModel, result_var, base_var, exp_var, bound):
+    """
+    Adds a constraint result_var == base_var ** exp_var to the model.
+    This is a workaround as CP-SAT doesn't directly support exponentiation.
+    """
+    possible_values = []
+    # This is a simple implementation. A more optimized version might be needed
+    # for larger domains or bounds.
+    for b in range(bound):
+        for e in range(10): # Limit exponent to prevent excessive computation
+            try:
+                res = b ** e
+                if res < bound:
+                    possible_values.append((res, b, e))
+                # Early exit if result exceeds bound, assuming exp is non-negative
+                elif e > 1 and b > 1:
+                    break
+            except OverflowError:
+                break # Exit if power calculation results in an overflow
+    
+    model.AddAllowedAssignments([result_var, base_var, exp_var], possible_values)
 
 def solve_with_cp_sat(puzzle_string: str, base=10, constraints=None):
     """
@@ -71,7 +101,7 @@ def solve_with_cp_sat(puzzle_string: str, base=10, constraints=None):
     first_letters = set()
     words_in_puzzle = re.findall('[A-Z]+', puzzle_string.upper())
     for word in words_in_puzzle:
-        if word:
+        if len(word) > 1:
             first_letters.add(word[0])
 
     # --- 2. Perform validations ---
