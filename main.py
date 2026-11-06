@@ -19,7 +19,7 @@ def main():
     parser.add_argument("--backend", choices=["cp-sat", "z3"])
     parser.add_argument("--json", action="store_true", help="Print structured results")
     parser.add_argument("--serve", action="store_true", help="Start local web UI")
-    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--port", type=int, default=8010)
     args = parser.parse_args()
     if args.serve:
         import uvicorn

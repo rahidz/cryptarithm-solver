@@ -8,10 +8,10 @@ Requires Python 3.11+, Node.js 22+, npm, and [uv](https://docs.astral.sh/uv/).
 
 ```sh
 ./run.sh
-# Open http://127.0.0.1:8000
+# Open http://127.0.0.1:8010
 ```
 
-The launcher creates `.venv`, installs Python dependencies, builds the UI, and starts the local server. Use `./run.sh --port 8010` to change the port. Puzzles are stored in `.workbench/puzzles.sqlite3`; set `CRYPTARITHM_DB` to use another database. Browser drafts use local storage. No accounts or external services are required.
+The launcher creates `.venv`, installs Python dependencies, builds the UI, and starts the local server. Use `./run.sh --port 8011` to choose another port. Puzzles are stored in `.workbench/puzzles.sqlite3`; set `CRYPTARITHM_DB` to use another database. Browser drafts use local storage. No accounts or external services are required.
 
 For frontend development, run `.venv/bin/python main.py --serve` and `cd frontend && npm run dev` in separate terminals.
 
