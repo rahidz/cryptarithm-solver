@@ -1,107 +1,118 @@
+"""Position-aware parser for digit arithmetic, without Python evaluation."""
+
 import re
 from dataclasses import dataclass
-from typing import List, Union
+
 
 @dataclass
 class Number:
-    digits: List[int]
+    digits: list
+
 
 @dataclass
 class Word:
-    letters: List[Union[str, int]]
+    letters: list
+
 
 @dataclass
 class Operation:
     op: str
-    left: Union[Number, Word, 'Operation']
-    right: Union[Number, Word, 'Operation']
+    left: object
+    right: object
 
-def _parse_operand(s: str) -> Union[Word, Number, Operation]:
-    s = s.strip()
-    if s.isdigit():
-        return Number(digits=[int(d) for d in s])
-    elif s.isalnum():
-        elements = [int(c) if c.isdigit() else c for c in s]
-        return Word(letters=elements)
-    # This is where we handle nested expressions by recursively calling the expression parser.
-    elif s.startswith('(') and s.endswith(')'):
-        return _parse_expression(s[1:-1])
-    else:
-        # If it's not a simple word/number or a parenthesis block, it must be a complex expression.
-        return _parse_expression(s)
 
-def _find_rightmost_operator(s: str, operators: List[str]) -> int:
-    """Find the rightmost operator at the top level of an expression."""
-    level = 0
-    for i in range(len(s) - 1, -1, -1):
-        if s[i] == ')':
-            level += 1
-        elif s[i] == '(':
-            level -= 1
-        elif level == 0 and s[i] in operators:
-            return i
-    return -1
+ATOM = r"(?:[A-Z0-9]|\?\d*|\[\d+\])+"
 
-def _find_leftmost_operator(s: str, operators: List[str]) -> int:
-    """Find the leftmost operator at the top level of an expression."""
-    level = 0
-    for i in range(len(s)):
-        if s[i] == '(':
-            level += 1
-        elif s[i] == ')':
-            level -= 1
-        elif level == 0 and s[i] in operators:
-            return i
-    return -1
 
-def _parse_expression(s: str) -> Union[Operation, Word, Number]:
-    """Recursively parse an expression respecting operator precedence."""
-    # Addition and Subtraction (lowest precedence)
-    pos = _find_rightmost_operator(s, ['+', '-'])
-    if pos != -1:
-        op = s[pos]
-        left = _parse_expression(s[:pos])
-        right = _parse_expression(s[pos+1:])
-        return Operation(op=op, left=left, right=right)
+class Parser:
+    def __init__(self, text, counter=None):
+        self.counter = counter if counter is not None else [0]
+        self.tokens, self.i = [], 0
+        pos = 0
+        while pos < len(text):
+            if text[pos].isspace():
+                pos += 1
+                continue
+            m = re.match(ATOM + r"|\*\*|[+*/^()=\-]", text[pos:].upper())
+            if not m:
+                raise ValueError(f"Unexpected character at column {pos + 1}")
+            self.tokens.append((m.group(), pos))
+            pos += len(m.group())
+        self.tokens.append(("", len(text)))
 
-    # Multiplication and Division (higher precedence)
-    pos = _find_rightmost_operator(s, ['*', '/'])
-    if pos != -1:
-        op = s[pos]
-        left = _parse_expression(s[:pos])
-        right = _parse_expression(s[pos+1:])
-        return Operation(op=op, left=left, right=right)
+    def peek(self):
+        return self.tokens[self.i][0]
 
-    # Exponentiation (highest precedence, right-associative)
-    pos = _find_leftmost_operator(s, ['^'])
-    if pos != -1:
-        op = s[pos]
-        left = _parse_expression(s[:pos])
-        right = _parse_expression(s[pos+1:])
-        return Operation(op=op, left=left, right=right)
-        
-    # If no operators, it's a simple operand (Word or Number)
-    return _parse_operand(s)
+    def take(self):
+        result = self.peek()
+        self.i += 1
+        return result
 
-def parse_puzzle(puzzle_string: str) -> Operation:
-    """
-    Parses the puzzle string into a full AST.
-    """
-    puzzle_string = puzzle_string.upper().replace(" ", "")
-    
-    parts = puzzle_string.split('=')
-    if len(parts) != 2:
-        raise ValueError("Puzzle must contain exactly one '='.")
-        
-    left_str, right_str = parts
-    
-    left_expr = _parse_expression(left_str)
-    right_expr = _parse_expression(right_str)
+    def fail(self, message):
+        raise ValueError(f"{message} at column {self.tokens[self.i][1] + 1}")
 
-    return Operation(op='=', left=left_expr, right=right_expr)
+    def expression(self, minimum=0):
+        token = self.peek()
+        if token in ("+", "-"):
+            self.take()
+            left = Operation(token, Number([0]), self.expression(25))
+        elif token == "(":
+            self.take()
+            left = self.expression()
+            if self.peek() != ")":
+                self.fail("Expected ')'")
+            self.take()
+        elif token and re.fullmatch(ATOM, token):
+            self.take()
+            digits = []
+            for digit in re.findall(r"\[\d+\]|\?\d*|[A-Z0-9]", token):
+                if digit == "?":
+                    self.counter[0] += 1
+                    digits.append(f"?{self.counter[0]}")
+                elif digit.startswith("?"):
+                    digits.append(digit)
+                elif digit.startswith("["):
+                    digits.append(int(digit[1:-1]))
+                else:
+                    digits.append(int(digit) if digit.isdigit() else digit)
+            left = (
+                Word(digits)
+                if any(isinstance(d, str) for d in digits)
+                else Number(digits)
+            )
+        else:
+            self.fail("Expected a numeral or expression")
+        priority = {"+": 10, "-": 10, "*": 20, "/": 20, "^": 30, "**": 30}
+        while self.peek() in priority and priority[self.peek()] >= minimum:
+            op = self.take()
+            right = self.expression(
+                priority[op] if op in ("^", "**") else priority[op] + 1
+            )
+            left = Operation("^" if op == "**" else op, left, right)
+        return left
 
-def parse_multi_puzzle(puzzle_lines: List[str]) -> List[Operation]:
-    """
-    Parses multiple puzzle lines into a list of ASTs.
-    """
-    return [parse_puzzle(line) for line in puzzle_lines]
+
+def _parse_expression(text, counter=None):
+    parser = Parser(text, counter)
+    result = parser.expression()
+    if parser.peek():
+        parser.fail("Unexpected token")
+    return result
+
+
+def parse_puzzle(text, counter=None):
+    parser = Parser(text, counter)
+    left = parser.expression()
+    if parser.peek() != "=":
+        parser.fail("Expected exactly one '='")
+    parser.take()
+    right = parser.expression()
+    if parser.peek():
+        parser.fail("Unexpected token")
+    return Operation("=", left, right)
+
+
+def parse_multi_puzzle(lines):
+    explicit = [int(x) for line in lines for x in re.findall(r"\?(\d+)", line)]
+    counter = [max(explicit, default=0)]
+    return [parse_puzzle(line, counter) for line in lines]

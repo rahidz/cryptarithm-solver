@@ -26,9 +26,10 @@ class TestCryptarithmSolver(unittest.TestCase):
         self.assertEqual(result, ["Too many unique letters for base 10. The puzzle is unsolvable."])
 
     def test_leading_zero_constraint(self):
-        # This puzzle requires B to be 0, but B is a first letter.
+        # Standalone digits may be zero; only multi-digit leading zeros are forbidden.
         result = solve_cryptarithm("A + B = A")
-        self.assertEqual(result, ["No solution found"])
+        self.assertEqual(len(result), 9)
+        self.assertTrue(all("B=0" in solution for solution in result))
 
     def test_constraint_puzzle(self):
         solutions = solve_cryptarithm("WRONG + WRONG = RIGHT", constraints={'O': 3})
@@ -52,7 +53,7 @@ class TestCryptarithmSolver(unittest.TestCase):
         self.assertEqual(result, ["Invalid constraint: A digit is greater than or equal to the base 2."])
 
     def test_invalid_constraint_leading_zero(self):
-        result = solve_cryptarithm("A + B = C", constraints={'A': 0})
+        result = solve_cryptarithm("AB + B = C", constraints={'A': 0})
         self.assertEqual(result, ["Invalid constraint: Letter 'A' cannot be zero."])
 
     def test_constraint_no_solution(self):
