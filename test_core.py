@@ -1,6 +1,11 @@
 import itertools
 import unittest
-from solver import solve_puzzle, validate_assignment, inspect_puzzle
+from solver import (
+    solve_puzzle,
+    validate_assignment,
+    validate_assignment_strict,
+    inspect_puzzle,
+)
 
 
 class CoreTests(unittest.TestCase):
@@ -148,6 +153,71 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(r["status"], expected, r)
             self.assertTrue(r["complete"])
             self.assertEqual(r["statistics"]["deferred_predicates"], 1)
+
+    def test_variable_power_columns_oracle(self):
+        for base in (2, 3, 4):
+            r = self.solve("A^B*C^D=ABCD", base=base, distinct=False)
+            expected = {
+                t
+                for t in itertools.product(range(base), repeat=4)
+                if t[0] != 0
+                and t[0] ** t[1] * t[2] ** t[3]
+                == ((t[0] * base + t[1]) * base + t[2]) * base + t[3]
+            }
+            self.assertTrue(r["complete"], r)
+            actual = {tuple(s["assignment"][v] for v in "ABCD") for s in r["solutions"]}
+            self.assertEqual(actual, expected, (base, r))
+        r = solve_puzzle(
+            dict(equations=["A^B*C^D=ABCD"], distinct=False, mode="first", timeout=3)
+        )
+        self.assertEqual(r["status"], "satisfiable", r)
+        self.assertTrue(
+            validate_assignment(
+                dict(equations=["A^B*C^D=ABCD"], distinct=False),
+                r["solutions"][0]["assignment"],
+            )
+        )
+
+
+class ConstraintSchemaTests(unittest.TestCase):
+    def test_strict_checker_preserves_unsupported_and_invalid(self):
+        with self.assertRaises(ValueError):
+            validate_assignment_strict(dict(equations=["1^99=1"]), {})
+        with self.assertRaises(ValueError):
+            validate_assignment_strict(
+                dict(
+                    equations=["1=1"],
+                    constraints=[dict(kind="modular", expr="1", modulus="0")],
+                ),
+                {},
+            )
+        self.assertFalse(
+            validate_assignment_strict(dict(equations=["1/A=2"]), {"A": 0})
+        )
+        self.assertFalse(validate_assignment(dict(equations=["1^99=1"]), {}))
+
+    def test_inspection_and_solving_reject_invalid_schema(self):
+        for constraint in [
+            dict(kind="unknown", expr="A"),
+            dict(kind=[], expr="A"),
+            dict(kind="prime", expr=[]),
+            dict(kind="inequality", expr="A", op="~"),
+            dict(kind="inequality", expr="A", value=0.5),
+            dict(kind="modular", expr="A", modulus=0),
+            dict(kind="modular", expr="A", modulus=-2),
+            dict(kind="modular", expr="A", modulus=True),
+            dict(kind="modular", expr="A", modulus=2, remainder=[]),
+            dict(kind="power", expr="A", degree=True),
+            dict(kind="root", expr="A", degree=17),
+            dict(kind="consecutive_primes", expr="A"),
+        ]:
+            spec = dict(
+                equations=["A=1"], assignments={"A": 1}, constraints=[constraint]
+            )
+            with self.subTest(constraint=constraint):
+                with self.assertRaises(ValueError):
+                    inspect_puzzle(spec)
+                self.assertEqual(solve_puzzle(spec)["status"], "invalid")
 
 
 if __name__ == "__main__":

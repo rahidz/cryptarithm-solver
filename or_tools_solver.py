@@ -24,6 +24,8 @@ def walk(node):
 
 
 def prepare(spec):
+    if not isinstance(spec, dict):
+        raise ValueError("Puzzle must be an object.")
     base = spec.get("base", 10)
     if type(base) is not int or not 2 <= base <= 36:
         raise ValueError("Base must be an integer between 2 and 36.")
@@ -46,6 +48,40 @@ def prepare(spec):
     for c in constraints:
         if not isinstance(c, dict) or "kind" not in c or "expr" not in c:
             raise ValueError("Each constraint requires kind and expr.")
+        kinds = {
+            "divisible",
+            "modular",
+            "prime",
+            "composite",
+            "square",
+            "power",
+            "root",
+            "factorial",
+            "inequality",
+            "consecutive_primes",
+        }
+        if not isinstance(c["kind"], str) or c["kind"] not in kinds:
+            raise ValueError("Unknown constraint kind.")
+        if not isinstance(c["expr"], str) or not c["expr"].strip():
+            raise ValueError("Constraint expr must be a nonempty expression string.")
+        if c["kind"] == "inequality" and (
+            not isinstance(c.get("op", "<"), str)
+            or c.get("op", "<") not in ("<", "<=", ">", ">=", "=", "!=")
+        ):
+            raise ValueError("Unsupported comparison operator.")
+        if c["kind"] in ("root", "power"):
+            degree = c.get("degree", 2)
+            if type(degree) is not int or not 2 <= degree <= 16:
+                raise ValueError("Degree must be within 2..16.")
+        if c["kind"] == "consecutive_primes" and "other" not in c:
+            raise ValueError("Consecutive-prime constraints require other.")
+        if c["kind"] in ("divisible", "modular"):
+            modulus = c.get("modulus", c.get("divisor", 0))
+            if type(modulus) is int and modulus <= 0:
+                raise ValueError("Modulus must be a positive integer.")
+        for key in ("value", "modulus", "divisor", "other", "remainder"):
+            if key in c and type(c[key]) is not int and not isinstance(c[key], str):
+                raise ValueError(f"{key} must be an integer or expression string.")
         if re.search(r"\?(?!\d)", c["expr"]):
             raise ValueError(
                 "Constraint expressions require explicit anonymous references such as ?1, not raw ?."
@@ -191,7 +227,8 @@ def predicate(value, c):
     raise ValueError(f"Unsupported constraint kind: {kind}")
 
 
-def validate_assignment(spec, assignment):
+def validate_assignment_strict(spec, assignment):
+    """Check exact arithmetic, preserving malformed/unsupported-operation errors."""
     try:
         p = prepare(spec)
         if any(
@@ -216,7 +253,15 @@ def validate_assignment(spec, assignment):
             if not predicate(evaluate(e, assignment, p["base"]), resolved):
                 return False
         return True
-    except (ValueError, ZeroDivisionError, KeyError, OverflowError):
+    except ZeroDivisionError:
+        return False
+
+
+def validate_assignment(spec, assignment):
+    """Convenient Boolean checker; proof-producing callers must use strict mode."""
+    try:
+        return validate_assignment_strict(spec, assignment)
+    except (ValueError, KeyError, OverflowError):
         return False
 
 
@@ -354,7 +399,11 @@ class Compiler:
         if node.op == "^":
             try:
                 exponent = evaluate(node.right, {}, self.p["base"])
-            except (KeyError, ValueError, ZeroDivisionError):
+            except KeyError:
+                return self.nonnegative_integer(node.left) and self.nonnegative_integer(
+                    node.right
+                )
+            except (ValueError, ZeroDivisionError):
                 return False
             return (
                 exponent.denominator == 1
@@ -362,6 +411,32 @@ class Compiler:
                 and self.column_compatible(node.left)
             )
         return False
+
+    def nonnegative_integer(self, node):
+        if isinstance(node, (Word, Number)):
+            return True
+        return (
+            node.op in ("+", "*", "^")
+            and self.nonnegative_integer(node.left)
+            and self.nonnegative_integer(node.right)
+        )
+
+    def positional_digits(self, term):
+        if term.lo < 0:
+            raise Unsupported(
+                "Positional power decomposition requires a nonnegative domain."
+            )
+        base = self.p["base"]
+        width, place = 1, base
+        while place <= term.hi:
+            width += 1
+            place *= base
+        digits = [
+            Term(self.model.new_int_var(0, base - 1, "power_digit"), 0, base - 1)
+            for _ in range(width)
+        ]
+        self.model.add(sum(d.expr * base**i for i, d in enumerate(digits)) == term.expr)
+        return digits
 
     def columns(self, node):
         zero = Term(0, 0, 0)
@@ -374,13 +449,22 @@ class Compiler:
                 else:
                     result.append(Term(d, d, d))
             return result
-        a = self.columns(node.left)
         if node.op == "^":
-            exponent = int(evaluate(node.right, {}, self.p["base"]))
+            try:
+                exponent = int(evaluate(node.right, {}, self.p["base"]))
+            except KeyError:
+                numerator, denominator = self.expression(node)
+                if denominator.lo != 1 or denominator.hi != 1:
+                    raise Unsupported(
+                        "Positional powers require an integer expression."
+                    )
+                return self.positional_digits(numerator)
+            a = self.columns(node.left)
             result = [Term(1, 1, 1)]
             for _ in range(exponent):
                 result = self.convolve(result, a)
             return result
+        a = self.columns(node.left)
         b = self.columns(node.right)
         if node.op == "*":
             return self.convolve(a, b)

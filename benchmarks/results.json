@@ -1,0 +1,714 @@
+{
+  "source": "http://cryptarithms.awardspace.us/collection.html",
+  "date": "2026-11-06",
+  "command": "python -m benchmarks.run --timeout 10",
+  "backend": "cp-sat",
+  "summary": {
+    "summary": {
+      "solved": 67,
+      "untranscribed": 22,
+      "unsatisfiable": 3
+    },
+    "denominator": 92,
+    "full_collection": 92,
+    "solved_fraction": 0.7282608695652174,
+    "most_of_full_collection": true
+  },
+  "cases": [
+    {
+      "id": 1,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3401,
+      "solver_elapsed": 0.010482491998118348
+    },
+    {
+      "id": 2,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3098,
+      "solver_elapsed": 0.003551326008164324
+    },
+    {
+      "id": 3,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.3389,
+      "solver_elapsed": 0.00746833199809771
+    },
+    {
+      "id": 4,
+      "outcome": "untranscribed",
+      "message": "Requires faithful digit-extraction or intersecting-power layout transcription.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 5,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3303,
+      "solver_elapsed": 0.02250467000703793
+    },
+    {
+      "id": 6,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3301,
+      "solver_elapsed": 0.00334894799743779
+    },
+    {
+      "id": 7,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 8,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 9,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 10,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3543,
+      "solver_elapsed": 0.014522640994982794
+    },
+    {
+      "id": 11,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.355,
+      "solver_elapsed": 0.007185487003880553
+    },
+    {
+      "id": 12,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.2943,
+      "solver_elapsed": 0.01428756900713779
+    },
+    {
+      "id": 13,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 1.0104,
+      "solver_elapsed": 0.6539299190044403
+    },
+    {
+      "id": 14,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 15,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3493,
+      "solver_elapsed": 0.0118816269969102
+    },
+    {
+      "id": 16,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 17,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.8574,
+      "solver_elapsed": 0.5229864300054032
+    },
+    {
+      "id": 18,
+      "outcome": "untranscribed",
+      "message": "Large geometric-series digit-location research problem, not a finite digit substitution.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 19,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.5151,
+      "solver_elapsed": 0.14312402499490418
+    },
+    {
+      "id": 20,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3549,
+      "solver_elapsed": 0.005109526988235302
+    },
+    {
+      "id": 21,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 22,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.343,
+      "solver_elapsed": 0.01465613600157667
+    },
+    {
+      "id": 23,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3874,
+      "solver_elapsed": 0.007556266995379701
+    },
+    {
+      "id": 24,
+      "outcome": "untranscribed",
+      "message": "Requires faithful digit-extraction or intersecting-power layout transcription.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 25,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3814,
+      "solver_elapsed": 0.026535985991358757
+    },
+    {
+      "id": 26,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.6947,
+      "solver_elapsed": 0.25031540100462735
+    },
+    {
+      "id": 27,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3428,
+      "solver_elapsed": 0.009844113999861293
+    },
+    {
+      "id": 28,
+      "outcome": "unsatisfiable",
+      "verified": false,
+      "message": "Search complete.",
+      "elapsed": 0.5297,
+      "solver_elapsed": 0.1408640259905951,
+      "note": "Literal ABCB retained. The published answer instead describes ABCD; no silent correction."
+    },
+    {
+      "id": 29,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.5586,
+      "solver_elapsed": 0.17102099099429324
+    },
+    {
+      "id": 30,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3302,
+      "solver_elapsed": 0.003698863001773134
+    },
+    {
+      "id": 31,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3588,
+      "solver_elapsed": 0.00390270899515599
+    },
+    {
+      "id": 32,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.3305,
+      "solver_elapsed": 0.014543475001119077
+    },
+    {
+      "id": 33,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.5511,
+      "solver_elapsed": 0.18269617098849267
+    },
+    {
+      "id": 34,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3378,
+      "solver_elapsed": 0.008407747998717241
+    },
+    {
+      "id": 35,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3021,
+      "solver_elapsed": 0.0052294869965408
+    },
+    {
+      "id": 36,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.7904,
+      "solver_elapsed": 0.38376087399956305
+    },
+    {
+      "id": 37,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.366,
+      "solver_elapsed": 0.00907200800429564
+    },
+    {
+      "id": 38,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.6944,
+      "solver_elapsed": 0.3280442260002019
+    },
+    {
+      "id": 39,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.352,
+      "solver_elapsed": 0.02831357299874071
+    },
+    {
+      "id": 40,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.3738,
+      "solver_elapsed": 0.0588633809966268
+    },
+    {
+      "id": 41,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3466,
+      "solver_elapsed": 0.04584741899452638
+    },
+    {
+      "id": 42,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3471,
+      "solver_elapsed": 0.010317790001863614
+    },
+    {
+      "id": 43,
+      "outcome": "unsatisfiable",
+      "verified": false,
+      "message": "Search complete.",
+      "elapsed": 0.4972,
+      "solver_elapsed": 0.13904973199532833,
+      "note": "Literal ECD cube condition retained; the published key makes ECD=516, which is not a cube."
+    },
+    {
+      "id": 44,
+      "outcome": "untranscribed",
+      "message": "Requires faithful digit-extraction or intersecting-power layout transcription.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 45,
+      "outcome": "untranscribed",
+      "message": "Requires faithful digit-extraction or intersecting-power layout transcription.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 46,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.341,
+      "solver_elapsed": 0.022788524991483428
+    },
+    {
+      "id": 47,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3299,
+      "solver_elapsed": 0.008446703010122292
+    },
+    {
+      "id": 48,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3314,
+      "solver_elapsed": 0.009546293003950268
+    },
+    {
+      "id": 49,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.38,
+      "solver_elapsed": 0.005464526999276131
+    },
+    {
+      "id": 50,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3362,
+      "solver_elapsed": 0.008712494003702886
+    },
+    {
+      "id": 51,
+      "outcome": "untranscribed",
+      "message": "Requires faithful digit-extraction or intersecting-power layout transcription.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 52,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 53,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3559,
+      "solver_elapsed": 0.021014583995565772
+    },
+    {
+      "id": 54,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 55,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.6489,
+      "solver_elapsed": 0.2908774500101572
+    },
+    {
+      "id": 56,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.4984,
+      "solver_elapsed": 0.13911442199605517
+    },
+    {
+      "id": 57,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3182,
+      "solver_elapsed": 0.0064894450042629614
+    },
+    {
+      "id": 58,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 4.6754,
+      "solver_elapsed": 4.305731931002811
+    },
+    {
+      "id": 59,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.335,
+      "solver_elapsed": 0.01289883500430733
+    },
+    {
+      "id": 60,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.3628,
+      "solver_elapsed": 0.061911721000797115
+    },
+    {
+      "id": 61,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 62,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.4656,
+      "solver_elapsed": 0.14674443900003098
+    },
+    {
+      "id": 63,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.4065,
+      "solver_elapsed": 0.07347232299798634
+    },
+    {
+      "id": 64,
+      "outcome": "untranscribed",
+      "message": "Requires half-turn numeral glyph semantics, not ordinary multiplication.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 65,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3138,
+      "solver_elapsed": 0.0034601699881022796
+    },
+    {
+      "id": 66,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3783,
+      "solver_elapsed": 0.011595385993132368
+    },
+    {
+      "id": 67,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.5092,
+      "solver_elapsed": 0.0688514390058117
+    },
+    {
+      "id": 68,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3924,
+      "solver_elapsed": 0.012146738998126239
+    },
+    {
+      "id": 69,
+      "outcome": "untranscribed",
+      "message": "Requires faithful digit-extraction or intersecting-power layout transcription.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 70,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 3.2188,
+      "solver_elapsed": 2.7849517409922555
+    },
+    {
+      "id": 71,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3348,
+      "solver_elapsed": 0.007007998006884009
+    },
+    {
+      "id": 72,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 73,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.3902,
+      "solver_elapsed": 0.036419255004148
+    },
+    {
+      "id": 74,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.4895,
+      "solver_elapsed": 0.13550181800383143
+    },
+    {
+      "id": 75,
+      "outcome": "unsatisfiable",
+      "verified": false,
+      "message": "Search complete.",
+      "elapsed": 0.3494,
+      "solver_elapsed": 0.005644821998430416,
+      "note": "Modern prime-digit interpretation retained. The published answer includes digit 1, not a modern prime."
+    },
+    {
+      "id": 76,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 77,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3887,
+      "solver_elapsed": 0.003753049997612834
+    },
+    {
+      "id": 78,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3394,
+      "solver_elapsed": 0.0036513310042209923
+    },
+    {
+      "id": 79,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3191,
+      "solver_elapsed": 0.00832970799820032
+    },
+    {
+      "id": 80,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3094,
+      "solver_elapsed": 0.0031584940006723627
+    },
+    {
+      "id": 81,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3255,
+      "solver_elapsed": 0.011366545004420914
+    },
+    {
+      "id": 82,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.4768,
+      "solver_elapsed": 0.13691917499818373
+    },
+    {
+      "id": 83,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.4907,
+      "solver_elapsed": 0.13863066700287163
+    },
+    {
+      "id": 84,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 85,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3499,
+      "solver_elapsed": 0.0038176749949343503
+    },
+    {
+      "id": 86,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Stopped at solution or time limit; completeness is not established.",
+      "elapsed": 0.3364,
+      "solver_elapsed": 0.007428875003824942
+    },
+    {
+      "id": 87,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 88,
+      "outcome": "untranscribed",
+      "message": "Not yet faithfully transcribed; counted as unsupported.",
+      "elapsed": 0.0
+    },
+    {
+      "id": 89,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.5443,
+      "solver_elapsed": 0.15989232900028583
+    },
+    {
+      "id": 90,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3618,
+      "solver_elapsed": 0.005462983011966571
+    },
+    {
+      "id": 91,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3194,
+      "solver_elapsed": 0.0040252929902635515
+    },
+    {
+      "id": 92,
+      "outcome": "solved",
+      "verified": true,
+      "message": "Search complete.",
+      "elapsed": 0.3156,
+      "solver_elapsed": 0.013204638002207503
+    }
+  ]
+}

@@ -1,59 +1,91 @@
-import time
-from solver import solve_cryptarithm
+"""CLI and local browser workbench launcher."""
+
+import argparse
+import json
+from pathlib import Path
+
 
 def main():
-    """
-    Main function to run the cryptarithm solver with a custom puzzle.
-    """
-    print("Enter the cryptarithm equations, one per line.")
-    print("The last line of the puzzle should be the final sum.")
-    print("Press Enter on an empty line when you are finished.")
-    
-    puzzles = []
-    while True:
-        line = input()
-        if not line:
-            break
-        puzzles.append(line)
+    parser = argparse.ArgumentParser(description="Exact cryptarithm workbench")
+    parser.add_argument("equations", nargs="*", help="Equations (quote each one)")
+    parser.add_argument(
+        "--file", type=Path, help="Puzzle JSON or newline-separated equations"
+    )
+    parser.add_argument("--base", type=int)
+    parser.add_argument("--assign", action="append", default=[], metavar="A=1")
+    parser.add_argument("--mode", choices=["first", "unique", "limit", "all"])
+    parser.add_argument("--limit", type=int)
+    parser.add_argument("--timeout", type=float)
+    parser.add_argument("--backend", choices=["cp-sat", "z3"])
+    parser.add_argument("--json", action="store_true", help="Print structured results")
+    parser.add_argument("--serve", action="store_true", help="Start local web UI")
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
+    if args.serve:
+        import uvicorn
 
-    if not puzzles:
-        print("No puzzle entered.")
+        uvicorn.run("app:app", host="127.0.0.1", port=args.port)
         return
+    from solver import solve_puzzle
+    from workbench_math import normalize_spec
 
-    constraints_str = input("Enter constraints (e.g., O=3, R=4), or press Enter for none: ")
-    base_str = input("Enter the base (default is 10): ")
-
-    constraints = {}
-    if constraints_str:
-        try:
-            for part in constraints_str.split(','):
-                letter, digit = part.strip().split('=')
-                constraints[letter.upper()] = int(digit)
-        except (ValueError, IndexError):
-            print("Invalid constraints format. Please use 'L=D, L=D'. Example: O=3, R=4")
-            return
-
+    spec = {}
+    if args.file:
+        content = args.file.read_text()
+        if args.file.suffix == ".json":
+            spec = json.loads(content)
+            if "version" in spec:
+                if spec["version"] != 1 or not isinstance(spec.get("puzzle"), dict):
+                    parser.error("Expected a version 1 workbench puzzle export.")
+                spec = spec["puzzle"]
+            spec = spec.get("spec", spec)
+        else:
+            spec = {
+                "equations": [line for line in content.splitlines() if line.strip()]
+            }
+    if args.equations:
+        spec["equations"] = args.equations
+    if not spec:
+        print("Enter equations, one per line; finish with a blank line:")
+        equations = []
+        while line := input().strip():
+            equations.append(line)
+        spec = {"equations": equations}
+    for name in ["base", "mode", "limit", "timeout", "backend"]:
+        value = getattr(args, name)
+        if value is not None:
+            spec[name] = value
     try:
-        base = int(base_str) if base_str else 10
-        if not 2 <= base <= 36:
-            raise ValueError
-    except ValueError:
-        print("Invalid base. Please enter an integer between 2 and 36.")
-        return
-
-    print(f"Solving: {puzzles} in base {base} with constraints {constraints}")
-    start_time = time.time()
-    solutions = solve_cryptarithm(puzzles, base, constraints)
-    end_time = time.time()
-    if solutions:
-        for i, solution in enumerate(solutions):
-            print(f"--- Solution {i+1} ---")
-            print(solution)
-            print("-" * (len(f"--- Solution {i+1} ---")))
+        assignments = dict(spec.get("assignments", {}))
+        for assignment in args.assign:
+            letter, value = assignment.split("=")
+            assignments[letter.upper()] = int(value)
+        spec["assignments"] = assignments
+        result = solve_puzzle(normalize_spec(spec))
+    except (ValueError, TypeError, KeyError) as exc:
+        result = {
+            "status": "invalid",
+            "message": str(exc),
+            "solutions": [],
+            "complete": False,
+        }
+    if args.json:
+        print(json.dumps(result, indent=2))
     else:
-        print("No solution found")
-    
-    print(f"\nSolved in {end_time - start_time:.4f} seconds.")
+        for index, solution in enumerate(result.get("solutions", []), 1):
+            print(f"\nSolution {index}")
+            print("\n".join(solution["rendered"]))
+            print(
+                " ".join(
+                    f"{letter}={value}"
+                    for letter, value in sorted(solution["assignment"].items())
+                )
+            )
+        print(f"\n{result['status']}: {result.get('message', '')}")
+        print(
+            f"Search complete: {result.get('complete', False)}; unique: {result.get('unique')}"
+        )
+
 
 if __name__ == "__main__":
     main()

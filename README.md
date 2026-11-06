@@ -1,78 +1,97 @@
-# Cryptarithm Solver
+# Cryptarithm Workbench
 
-This project is a Python application designed to solve cryptarithmetic puzzles. A cryptarithm is a mathematical puzzle where letters are substituted for digits. The goal is to find the digit corresponding to each letter so that the given mathematical equation holds true.
+Solve alphametics and missing-digit arithmetic in a local browser UI or from Python/the terminal. Includes visual addition, subtraction, multiplication, long division, and square-root extraction; exact solutions; uniqueness checks; hints; and bounded puzzle-generation experiments.
 
-For example, `SEND + MORE = MONEY` can be solved as `9567 + 1085 = 10652`.
+## Run
 
-## Features
+Requires Python 3.11+, Node.js 22+, npm, and [uv](https://docs.astral.sh/uv/).
 
-*   **Complex Expression Support**: Solves puzzles with multiple operators, including addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), and exponentiation (`^`), respecting mathematical precedence.
-*   **Finds All Solutions**: Capable of finding and displaying all possible solutions to a puzzle.
-*   **Arbitrary Base Support**: Solves puzzles in different numerical bases, from base 2 to base 36.
-*   **Constraints**: Allows users to provide constraints by pre-assigning digits to specific letters (e.g., `M=1`).
-*   **Powerful Backend**: Utilizes Google's OR-Tools (CP-SAT solver) to efficiently model and solve complex puzzles as constraint satisfaction problems.
-*   **AST-Based Parsing**: Safely parses puzzle strings into an Abstract Syntax Tree (AST), allowing for the evaluation of nested expressions without using `eval()`.
-
-## How to Run
-
-1.  Ensure you have Python 3 installed.
-2.  Install the required dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  Run the main script from your terminal:
-    ```bash
-    python main.py
-    ```
-4.  Follow the interactive prompts to enter the puzzle, optional constraints, and the base.
-
-### Example Session
-
-```
-Enter a cryptarithm puzzle: SEND + MORE = MONEY
-Enter constraints (e.g., O=3, R=4), or press Enter for none:
-Enter the base (default is 10):
-Solving: SEND + MORE = MONEY in base 10 with constraints {}
-Solution: 9567 + 1085 = 10652
-
-Solved in 0.0450 seconds.
+```sh
+./run.sh
+# Open http://127.0.0.1:8000
 ```
 
-## Examples
+The launcher creates `.venv`, installs Python dependencies, builds the UI, and starts the local server. Use `./run.sh --port 8010` to change the port. Puzzles are stored in `.workbench/puzzles.sqlite3`; set `CRYPTARITHM_DB` to use another database. Browser drafts use local storage. No accounts or external services are required.
 
-This solver can handle a wide variety of puzzles:
+For frontend development, run `.venv/bin/python main.py --serve` and `cd frontend && npm run dev` in separate terminals.
 
-*   **Classic Addition**: `SEND + MORE = MONEY` -> `9567 + 1085 = 10652`
-*   **Multiplication**: `ABCD * 9 = DCBA` -> `1089 * 9 = 9801`
-*   **Division**: `DONALD / GERALD = R` (approximated)
-*   **Exponentiation**: `A ** B = C`
-*   **Different Bases**: `GREEN - BLUE = ORANGE` in base 16
-*   **With Constraints**: `WRONG + WRONG = RIGHT` with `O=3` -> `49306 + 49306 = 98612`
+## Use
 
-## Project Structure
+- Type equations, one per line, or select **Visual skeleton** and fill the labelled rows.
+- Choose a base, optional assignments, and search mode. **Find a solution** stops at one result; **Check uniqueness** searches for a second assignment.
+- Inspect solutions, digit mappings, column carries/borrows, hints, and candidate digits. Unknown candidates are not exclusions.
+- Save puzzles to the library or export/import versioned JSON. The library also contains transcribed puzzles from the Sphinx collection, with source links and explicit gaps.
+- The research lab generates seeded puzzles, checks clue minimality within a bounded template, and compares bases/backends. A partial count is not an exhaustive count.
 
-*   `main.py`: The main entry point for the application. It handles user input and orchestrates the solving process.
-*   `parser.py`: Implements a robust parser that converts the puzzle string into an Abstract Syntax Tree (AST), respecting operator precedence.
-*   `solver.py`: A simple wrapper that directs the puzzle to the OR-Tools solver.
-*   `or_tools_solver.py`: The core of the solver. It uses the Google OR-Tools CP-SAT solver to model the puzzle as a constraint satisfaction problem and find all valid solutions.
-*   `test_solver.py`: Contains a suite of unit tests to ensure the correctness of all modules.
+### Arithmetic notation
 
-## How It Works
+Named letters represent shared digits and are distinct by default. Disable distinctness or specify `distinct_groups` for other conventions. A multi-digit numeral cannot start with zero; a standalone digit can.
 
-The application leverages **Google's OR-Tools**, a powerful suite for solving combinatorial optimization problems. The old approach of brute-force permutation has been replaced with a more intelligent **constraint programming** model.
+Supported operators: `+ - * / ^ **`, unary signs, parentheses, and `=`. Division is exact rational arithmetic, with zero denominators forbidden. Powers associate rightward. Numeral digits are interpreted in the selected base, not automatically decimal.
 
-1.  **Parse to AST**: The puzzle string (e.g., `SEND + MORE = MONEY`) is first parsed by `parser.py` into an Abstract Syntax Tree (AST). This tree structure accurately represents the mathematical operations and their hierarchy, easily handling complex and nested expressions.
+Use `[15]` for a fixed digit fifteen. Alphabetic characters always name variables. In equations, `?` creates an independent digit and `?12` references a shared anonymous digit numbered twelve; write `?[3]` for a blank followed by fixed digit three. In the visual editor, `?3` naturally means a blank followed by three.
 
-2.  **Create a CP-SAT Model**: In `or_tools_solver.py`, a `CpModel` is instantiated. This model will contain all the variables and constraints of our puzzle.
+Multiplication partials are entered **unshifted**, rightmost multiplier digit first. Division optional steps alternate product and difference for each quotient digit, left to right. Root extraction rows are root, radicand, remainder, initial square, then current/product pairs. The UI labels these rows.
 
-3.  **Define Variables**: Each unique letter in the puzzle is defined as an integer variable, with a domain (possible values) from `0` to `base - 1`.
+### CLI
 
-4.  **Apply Constraints**: The logic of the puzzle is translated into a set of constraints that the solver must satisfy:
-    *   **All Different**: All letter variables must be assigned a unique digit.
-    *   **No Leading Zeros**: The first letter of any word (e.g., 'S' in `SEND`) cannot be assigned the digit 0.
-    *   **User Constraints**: Any constraints provided by the user (e.g., `M=1`) are added to the model.
-    *   **The Main Equation**: The AST is traversed to build a single, large mathematical constraint representing the core puzzle equation. The solver handles `+`, `-`, `*`, `/`, and `^` operations by converting them into equivalent forms within the model.
+```sh
+.venv/bin/python main.py 'SEND + MORE = MONEY' --mode unique
+.venv/bin/python main.py 'ALFRED / E = NEUMAN' --base 9 --json
+.venv/bin/python main.py --file puzzle.json --timeout 30
+.venv/bin/python main.py --file equations.txt --assign M=1 --mode limit --limit 20
+```
 
-5.  **Solve**: The CP-SAT solver is invoked. It uses sophisticated search algorithms to find all possible assignments for the letter variables that satisfy every single constraint.
+With no arguments the CLI accepts equations until a blank line. JSON input accepts a bare spec, a puzzle containing `spec`, or a version-1 UI export.
 
-6.  **Return Solutions**: A callback function collects all valid solutions found by the solver. These are then formatted into readable strings and presented to the user.
+### Python
+
+```python
+from solver import solve_puzzle
+
+result = solve_puzzle({
+    'equations': ['SEND + MORE = MONEY'],
+    'base': 10,
+    'assignments': {'M': 1},
+    'mode': 'unique',
+    'timeout': 30,
+})
+print(result['solutions'])
+```
+
+For layouts, call `workbench_math.normalize_spec(spec)` first. The legacy `solve_cryptarithm(puzzles, base=10, constraints=None)` still returns formatted strings; new callers should use structured results.
+
+Optional spec fields: `domains` (digit lists per variable), `distinct` (default true), `distinct_groups`, `constraints`, `backend` (`cp-sat` or experimental `z3`), `mode` (`first`, `unique`, `limit`, `all`), `limit`, and `timeout` in seconds.
+
+Constraints use `kind` and `expr`, for example:
+
+```json
+[
+  {"kind": "prime", "expr": "ABC"},
+  {"kind": "modular", "expr": "ABC", "modulus": 7, "remainder": 2},
+  {"kind": "inequality", "expr": "A", "op": ">", "value": "B"},
+  {"kind": "power", "expr": "DEFG", "degree": 3}
+]
+```
+
+Also supported: `composite`, `square`, `root` (perfect integer power of the given degree), `factorial` (membership in bounded factorial values), `divisible`, and `consecutive_primes`. See tests for exact examples. Constraint metadata integers are decimal; expression strings use the puzzle base.
+
+Results distinguish satisfiable, unsatisfiable, incomplete, invalid, unsupported, and error. `complete` records exhaustive search; `unique` is true only with a proof, false after two assignments, and null when unresolved. Every returned assignment is independently evaluated with Python integers and fractions. Backend limits are explicit errors, not mathematical impossibility claims.
+
+## Tests and benchmark
+
+```sh
+uv pip install --python .venv/bin/python pytest httpx
+.venv/bin/python -m pytest -q
+cd frontend && npm run build
+cd ..
+.venv/bin/python -m benchmarks.run --timeout 2
+```
+
+The recorded benchmark solves **67/92 (72.8%)** entries of the [Sphinx collection](http://cryptarithms.awardspace.us/collection.html) at ten seconds per case. The denominator includes 22 untranscribed puzzles and three literal-source inconsistencies. Inputs contain mathematical clues, not published answers. See `benchmarks/README.md` for evidence and source ambiguities.
+
+API documentation is available at `/docs`. Jobs run in isolated processes with cancellation and one active job at a time. The server enforces a whole-job time budget; direct Python callers should use process isolation when bounding model-building time matters.
+
+Research experiments include replayable elementary case-split proofs, adversarial generation, fixed-assignment polynomial identities across bases, and independent exhaustive certificates for a small arithmetic grammar. Certificates are rechecked without the solver's parser/evaluator; they are not general theorem-prover certificates. Screenshot import and unrestricted family discovery remain future ideas.
+
+`plan.md` tracks implementation and verification.
