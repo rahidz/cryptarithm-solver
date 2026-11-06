@@ -242,7 +242,11 @@ def candidates(spec, options=None):
         if letter not in info["variables"]:
             raise ValueError(f"Unknown digit variable: {letter}")
         domain = list(info["domains"][letter])
-        entry = {"possible": [], "excluded": [], "unknown": []}
+        entry = {
+            "possible": [],
+            "excluded": [d for d in range(spec.get("base", 10)) if d not in domain],
+            "unknown": [],
+        }
         for digit in domain:
             remaining = deadline - time.monotonic()
             if remaining <= 0:

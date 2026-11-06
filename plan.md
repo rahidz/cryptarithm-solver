@@ -1,6 +1,6 @@
 # Cryptarithm Workbench
 
-Execution deadline: 2026-11-06 05:00 America/New_York. Check items only after implementation and relevant verification. Public-repository push authorized by Rahid. Finish with the requested anti-bloat refactor and commit/push.
+Completed 2026-11-05 (America/New_York), before the requested 05:00 deadline. Public-repository push authorized by Rahid.
 
 ## Goal and defaults
 
@@ -52,13 +52,13 @@ Additional acceptance criterion: solve most of the puzzles at http://cryptarithm
 
 ## Delivery and verification
 
-- [ ] Correctness release: parser, semantics, results, bounds, checker, CLI, docs.
-- [ ] Workbench release: complete UI, five layouts, persistence, jobs, comparison, uniqueness.
-- [ ] Teaching release: rules, candidates, hints, assumptions.
-- [ ] Advanced release: exact constraints, base sweeps, symbolic features, generation, experiments.
-- [ ] Research track: bounded prototypes tested and scope stated; speculative extensions remain optional.
-- [ ] Final anti-bloat pass, required checks, commit and authorized public push.
+- [x] Correctness release: parser, semantics, results, bounds, checker, CLI, docs.
+- [x] Workbench release: complete UI, five layouts, persistence, jobs, comparison, uniqueness.
+- [x] Teaching release: rules, candidates, hints, assumptions.
+- [x] Advanced release: exact constraints, base sweeps, symbolic features, generation, experiments.
+- [x] Research track: bounded prototypes tested and scope stated; speculative extensions remain optional.
+- [x] Final anti-bloat pass, required checks, commit and authorized public push.
 
-Preserve valid existing examples; correct obsolete zero tests. Add malformed input, precedence, invalid digits, negative intermediates, division/zero denominators, powers and overflow tests. Compare small cases against independent brute force. Check layouts and intermediate arithmetic, unique/multiple solutions, cancellation/timeouts/errors, persistence/import round trips, and browser entry/edit/solve/hint/save/export flows. Run a fixed corpus including the linked collection and report unresolved failures honestly.
+Verification: **97 Python tests passed**, including independent small-domain oracles, adversarial arithmetic, proof/certificate tampering, process cancellation/queue recovery, and persistence. Strict TypeScript and production build passed. Browser checks covered equation/root solving, uniqueness, selectable cells, candidates, scoped assumptions, hints, saved-library reopening, export/import, generation, certificate download/replay, and mobile/tablet layouts. Benchmark results are recorded separately.
 
 Release bar: every displayed solution passes independent checking; incomplete search never masquerades as proof; ordinary and skeleton puzzles can be entered, solved, inspected, saved, and reopened entirely in the UI.

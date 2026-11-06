@@ -127,6 +127,12 @@ class LayoutTests(unittest.TestCase):
 
 
 class TeachingTests(unittest.TestCase):
+    def test_declared_domain_exclusions(self):
+        values = candidates({"equations": ["A=A"], "base": 3, "domains": {"A": [1]}})[
+            "candidates"
+        ]["A"]
+        self.assertEqual(values, {"possible": [1], "excluded": [0, 2], "unknown": []})
+
     def test_unsupported_exact_leaf_not_a_contradiction(self):
         from teaching import propagate, proof_search, replay_proof
 
@@ -382,7 +388,7 @@ class TeachingTests(unittest.TestCase):
             ),
         ):
             self.assertEqual(
-                candidates({"equations": ["A=A"]})["candidates"]["A"],
+                candidates({"equations": ["A=A"], "base": 2})["candidates"]["A"],
                 {"possible": [], "excluded": [], "unknown": [0, 1]},
             )
 

@@ -1,0 +1,9 @@
+Objective resolved: implemented the local cryptarithm workbench, completed the scoped checklist in plan.md, ran anti-bloat cleanup, and committed/pushed with Rahid's authorization. Finished before 2026-11-06 05:00 Eastern.
+
+Run ./run.sh (Python via uv, React/TypeScript build, localhost:8000). Saved puzzles live in ignored .workbench/puzzles.sqlite3; browser drafts use local storage. Main code: parser.py/or_tools_solver.py; app.py job processes/API; workbench_math.py visual layouts and tools; teaching.py replayable deduction search; research.py exact base-family analysis and independent finite certificates; frontend/ UI.
+
+Verification: 97 Python tests, strict TypeScript and production build passed. Real-browser checks covered solving/uniqueness, root layouts/cell selection, hints/candidates/scoped assumptions, save/reopen/import/export, generation/certificate replay, responsive layouts. Benchmark: 67/92 exact-verified at ten seconds per case; all70 transcribed cases resolve, with3 literal-source inconsistencies;22 untranscribed remain in denominator. Source fidelity independently reviewed. Evidence and scope in benchmarks/README.md and results.json. No published answers seed solving.
+
+Limits: Z3 equation subset only; exact numeric/resource limits explicitly unsupported rather than UNSAT. Proof/certificate/family features are bounded prototypes, not general theorem proving. Screenshot import/unrestricted family discovery remain future ideas. Independent tests/checkers must stay independent of solver correctness-critical logic.
+
+Public origin github.com/rahidz/cryptarithm-solver, master. User-owned untracked AGENTS.md deliberately untouched. No active work or running research computations remain.

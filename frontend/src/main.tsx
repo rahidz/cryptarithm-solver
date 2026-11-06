@@ -68,7 +68,9 @@ type Result = {
   verification?: unknown;
   rows?: Record<string, unknown>[];
   certificate?: unknown;
-  identities?: unknown;
+  polynomials?: string[];
+  denominator_conditions?: string[];
+  minimum_base?: number;
   steps?: {
     id: string;
     rule: string;
@@ -105,21 +107,21 @@ const examples: Puzzle[] = [
     id: "example-send",
     title: "Send a little more",
     tags: ["Classic", "Addition"],
-    notes: "The classic alphametic. Each letter is a different digit.",
+    notes: "",
     spec: initial,
   },
   {
     id: "example-multiply",
     title: "A reversal of fortune",
     tags: ["Multiplication"],
-    notes: "A four-digit number, reversed by multiplying by nine.",
+    notes: "",
     spec: { ...initial, equations: ["ABCD * 9 = DCBA"] },
   },
   {
     id: "example-skeleton",
     title: "Fill in the gaps",
     tags: ["Skeleton"],
-    notes: "Question marks are independent unknown digits.",
+    notes: "",
     spec: {
       ...initial,
       equations: [],
@@ -130,14 +132,14 @@ const examples: Puzzle[] = [
     id: "example-trig",
     title: "Not quite trigonometry",
     tags: ["Advanced"],
-    notes: "A numerical identity disguised as familiar functions.",
+    notes: "",
     spec: { ...initial, equations: ["SIN*SIN + COS*COS = UNITE"] },
   },
   {
     id: "example-division",
     title: "Long story short",
     tags: ["Division"],
-    notes: "A long-division layout, with an exact remainder.",
+    notes: "",
     spec: {
       ...initial,
       equations: [],
@@ -148,11 +150,27 @@ const examples: Puzzle[] = [
     id: "example-bases",
     title: "Another number system",
     tags: ["Base 9"],
-    notes: "The same arithmetic rules, a different collection of digits.",
+    notes: "",
     spec: { ...initial, equations: ["ALFRED / E = NEUMAN"], base: 9 },
   },
-  {id:'example-certificate',title:'Finite certificate',tags:['Research'],notes:'',spec:{...initial,equations:['A+1=2'],base:3}},
-  {id:'example-family',title:'Base-parametric identity',tags:['Research'],notes:'',spec:{...initial,equations:['AB+BA=(A+B)*11'],assignments:{A:1,B:2}}},
+  {
+    id: "example-certificate",
+    title: "Finite certificate",
+    tags: ["Research"],
+    notes: "",
+    spec: { ...initial, equations: ["A+1=2"], base: 3 },
+  },
+  {
+    id: "example-family",
+    title: "Base-parametric identity",
+    tags: ["Research"],
+    notes: "",
+    spec: {
+      ...initial,
+      equations: ["AB+BA=(A+B)*11"],
+      assignments: { A: 1, B: 2 },
+    },
+  },
 ];
 async function api<T>(
   path: string,
@@ -505,9 +523,7 @@ function App() {
       );
       if (!check.valid) throw new Error(check.errors.map(String).join(" · "));
       load(imported);
-      setNotice(
-        "Imported as a new draft.",
-      );
+      setNotice("Imported as a new draft.");
     } catch (e) {
       setError(String(e));
     }
@@ -519,7 +535,7 @@ function App() {
         id: "collection-" + b.id,
         title: "Sphinx collection · " + b.id,
         tags: ["Collection"],
-        notes: b.note || '',
+        notes: b.note || "",
         source: b.source,
         spec: { ...structuredClone(initial), ...b.spec },
       })),
@@ -628,13 +644,13 @@ function App() {
           }}
         />
         <div className="content">
-              <h1 className="page-title">
-                {page === "workbench"
-                  ? "Workbench"
-                  : page === "library"
-                    ? "Puzzle library"
-                    : "Research lab"}
-              </h1>
+          <h1 className="page-title">
+            {page === "workbench"
+              ? "Workbench"
+              : page === "library"
+                ? "Puzzle library"
+                : "Research lab"}
+          </h1>
           {error && (
             <div className="alert error" role="alert">
               {error}
@@ -735,7 +751,7 @@ function App() {
                         ? p.spec.layout.rows.join("\n")
                         : p.spec.equations.join("\n")}
                     </pre>
-                    <p>{p.notes}</p>
+                    {p.notes && <p>{p.notes}</p>}
                     <div className="card-actions">
                       <button
                         onClick={() =>
@@ -747,7 +763,7 @@ function App() {
                           )
                         }
                       >
-                        Open exploration ↗
+                        Open ↗
                       </button>
                       {p.source && (
                         <a href={p.source} target="_blank" rel="noreferrer">
@@ -790,7 +806,10 @@ function App() {
           ) : (
             <>
               {page === "research" && (
-                <section className="panel research-panel" aria-label="Generation and experiment settings">
+                <section
+                  className="panel research-panel"
+                  aria-label="Generation and experiment settings"
+                >
                   <div className="research-controls">
                     <label>
                       Random seed
@@ -1306,10 +1325,6 @@ function App() {
                       >
                         Apply constraints
                       </button>
-                      <p className="help">
-                        Exact predicate constraints are validated by the solver.
-                        Export preserves all advanced fields.
-                      </p>
                       <label>
                         Tags
                         <input
@@ -1407,9 +1422,7 @@ function App() {
                       <div className="empty-state">
                         <div className="orbit spinning">∴</div>
                         <h3>
-                          {job.state === "queued"
-                            ? "Queued"
-                            : "Searching…"}
+                          {job.state === "queued" ? "Queued" : "Searching…"}
                         </h3>
                         <p>
                           {(job.elapsed || 0).toFixed(1)}s · {spec.backend}
@@ -1578,10 +1591,16 @@ function App() {
                               <div className="generated">
                                 <h3>Generated puzzle</h3>
                                 <pre>{result.spec.equations.join("\n")}</pre>
-                                <p>
-                                  Verification:{" "}
-                                  {JSON.stringify(result.verification)}
-                                </p>
+                                <details>
+                                  <summary>Uniqueness verification</summary>
+                                  <pre className="artifact-preview">
+                                    {JSON.stringify(
+                                      result.verification,
+                                      null,
+                                      2,
+                                    )}
+                                  </pre>
+                                </details>
                                 <button
                                   className="primary"
                                   onClick={() =>
@@ -1639,28 +1658,28 @@ function App() {
                                 </button>
                               </>
                             )}
-                            {result.identities !== undefined && (
+                            {result.polynomials !== undefined && (
                               <details>
                                 <summary>Exact identities</summary>
                                 <pre className="artifact-preview">
-                                  {JSON.stringify(result.identities, null, 2)}
+                                  {JSON.stringify({polynomials: result.polynomials,
+                                    nonzero: result.denominator_conditions,
+                                    minimum_base: result.minimum_base}, null, 2)}
                                 </pre>
                               </details>
                             )}
                             {result.certificate !== undefined && (
-                              <div className="certificate-card">
-                                <button
-                                  className="secondary"
-                                  onClick={() =>
-                                    download(
-                                      "cryptarithm-certificate.json",
-                                      result.certificate,
-                                    )
-                                  }
-                                >
-                                  Download certificate JSON
-                                </button>
-                              </div>
+                              <button
+                                className="secondary full"
+                                onClick={() =>
+                                  download(
+                                    "cryptarithm-certificate.json",
+                                    result.certificate,
+                                  )
+                                }
+                              >
+                                Download certificate JSON
+                              </button>
                             )}
                           </>
                         )}
@@ -1738,7 +1757,7 @@ function App() {
                               Find verified deductions
                             </button>
                             <label className="assumption-label">
-                              Try an assumption
+                              Temporary assumption
                               <div className="input-action">
                                 <input
                                   aria-label="Assumption"
@@ -1776,17 +1795,10 @@ function App() {
                                 </button>
                               </div>
                             </label>
-                            <p className="help">
-                              This temporary assumption does not change your
-                              saved puzzle.
-                            </p>
                           </>
                         )}
                         {tab === "candidates" && (
                           <>
-                            <h3 className="section-title">
-                              What could each digit be?
-                            </h3>
                             <p className="help">
                               Possible values have a witness. Excluded values
                               are proved impossible. Unknown values need more
@@ -1836,8 +1848,16 @@ function App() {
                           </>
                         )}
                       </>
-                    ) : (
+                    ) : tab === "solution" ? (
                       <p className="empty-state">No results.</p>
+                    ) : (
+                      <button
+                        className="secondary full"
+                        disabled={!!busy}
+                        onClick={() => run(tab === "reasoning" ? "hint" : "candidates")}
+                      >
+                        {tab === "reasoning" ? "Find verified deductions" : "Analyze digit candidates"}
+                      </button>
                     )}
                   </div>
                 </section>
@@ -1866,7 +1886,7 @@ function rowLabel(layout: Layout, i: number) {
   if (layout.kind === "root")
     return (
       ["Root", "Radicand", "Remainder", "Initial square"][i] ||
-      (i % 2 === 0 ? "Current " + (i - 2) / 2 : "Product " + (i - 3) / 2)
+      (i % 2 === 0 ? "Current " + i / 2 : "Product " + (i - 1) / 2)
     );
   return (
     ["Dividend", "Divisor", "Quotient", "Remainder"][i] ||

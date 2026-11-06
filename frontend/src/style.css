@@ -116,7 +116,9 @@ button {
   color: #ddc28f;
   line-height: 1;
 }
-.sidebar nav { margin-top:40px; }
+.sidebar nav {
+  margin-top: 40px;
+}
 .sidebar-label {
   font-size: 9px;
   letter-spacing: 1.9px;
@@ -211,7 +213,9 @@ main {
   margin: 0 auto;
   padding: 39px 40px 20px;
 }
-.page-title { margin-bottom:28px; }
+.page-title {
+  margin-bottom: 28px;
+}
 h1 {
   font:
     32px/1.2 Georgia,
@@ -601,10 +605,6 @@ details label {
   margin-top: 21px;
   line-height: 1.6;
 }
-.section-title {
-  margin: 6px 0 13px;
-  font-size: 22px;
-}
 .help {
   font-size: 10px;
   color: #87947d;
@@ -746,7 +746,7 @@ details label {
 }
 .research-controls {
   display: grid;
-  grid-template-columns: repeat(4,1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 15px;
 }
 .skeleton {
@@ -869,9 +869,6 @@ details label {
   color: #3f643c;
   overflow-wrap: anywhere;
 }
-.certificate-card {
-  padding: 5px 0 20px;
-}
 .assumption-scope {
   border: 1px solid #d9bd7a;
   border-radius: 6px;
@@ -955,6 +952,9 @@ td {
   }
 }
 @media (max-width: 1150px) {
+  .research-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .sidebar {
     width: 205px;
     padding: 30px 17px;
